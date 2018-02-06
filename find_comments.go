@@ -23,6 +23,8 @@ func FindCommentsByPos(files []*ast.File, pos token.Pos) *ast.CommentGroup {
 	switch t := nodes[0].(type) {
 	case *ast.GenDecl:
 		return t.Doc
+	case *ast.FuncDecl:
+		return t.Doc
 	case *ast.Ident:
 		if t.Obj == nil {
 			return nil
