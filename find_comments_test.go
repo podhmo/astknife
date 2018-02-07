@@ -2,6 +2,7 @@ package astknife
 
 import (
 	"go/ast"
+	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -15,6 +16,9 @@ func TestFindComments(t *testing.T) {
 	source := `
 package p
 
+// Pi : *π*
+const Pi = 3.14
+
 // S : *this is S*
 type S struct {
 	// Name : *name of S*
@@ -26,11 +30,28 @@ type S struct {
 func (s *S) String() string {
 	return s.Name
 }
+
+// Seek whence values.
+const (
+	SeekStart   = 0 // seek relative to the origin of the file
+	SeekCurrent = 1 // *seek relative to the current offset*
+	SeekEnd     = 2 // seek relative to the end
+)
+
+const (
+	// ColorChannelRed : "red"
+	ColorChannelRed = "red"
+	// ColorChannelGreen : "*green*"
+	ColorChannelGreen = "green"
+	// ColorChannelBlue : "blue"
+	ColorChannelBlue = "blue"
+)
 `
 	conf := &types.Config{
 		Error: func(err error) {
 			t.Fatalf("error when typecheck %s", err)
 		},
+		Importer: importer.Default(),
 	}
 	file, _ := parser.ParseFile(fset, "", source, parser.ParseComments)
 	files := []*ast.File{file}
@@ -80,7 +101,27 @@ func (s *S) String() string {
 			},
 			comment: "*for stringer*",
 		},
-		// todo: const
+		{
+			msg: "toplevel const",
+			getPos: func() token.Pos {
+				return pkg.Scope().Lookup("Pi").Pos() - 1 // xxx:
+			},
+			comment: "π",
+		},
+		{
+			msg: "toplevel const2",
+			getPos: func() token.Pos {
+				return pkg.Scope().Lookup("SeekCurrent").Pos()
+			},
+			comment: "seek relative to the current offset",
+		},
+		{
+			msg: "toplevel const3",
+			getPos: func() token.Pos {
+				return pkg.Scope().Lookup("ColorChannelGreen").Pos()
+			},
+			comment: "*green*",
+		},
 	}
 
 	for _, c := range candidates {
