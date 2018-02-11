@@ -48,6 +48,16 @@ func (s *S2) Hello() string {
 }
 `,
 		},
+		{
+			source: source,
+			name:   "S.Hello",
+			source2: `
+package p
+func (s *S) Hello() string {
+	return "s.hello"
+}
+`,
+		},
 	}
 
 	for _, c := range candidates {

@@ -32,8 +32,8 @@ func (r *Result) Name() string {
 	return "<nil>"
 }
 
-// LookupToplevel :
-func LookupToplevel(file *ast.File, name string) *Result {
+// Toplevel :
+func Toplevel(file *ast.File, name string) *Result {
 	raw := file.Scope.Lookup(name)
 	if raw == nil {
 		return nil
@@ -44,8 +44,8 @@ func LookupToplevel(file *ast.File, name string) *Result {
 	}
 }
 
-// LookupAllMethods :
-func LookupAllMethods(f *ast.File, obname string) []*Result {
+// AllMethods :
+func AllMethods(f *ast.File, obname string) []*Result {
 	ob := f.Scope.Lookup(obname)
 	if ob == nil {
 		return nil
@@ -65,13 +65,17 @@ func LookupAllMethods(f *ast.File, obname string) []*Result {
 	return r
 }
 
-// LookupMethod :
-func LookupMethod(f *ast.File, obname string, name string) *Result {
+// Method :
+func Method(f *ast.File, obname string, name string) *Result {
 	ob := f.Scope.Lookup(obname)
 	if ob == nil {
 		return nil
 	}
+	return MethodFromObject(f, ob, name)
+}
 
+// MethodFromObject :
+func MethodFromObject(f *ast.File, ob *ast.Object, name string) *Result {
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.FuncDecl); ok {
 			if isMethod(decl) && isSameTypeOrPointer(ob, decl.Recv.List[0].Type) {

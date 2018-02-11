@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestLookupMethods(t *testing.T) {
+func TestMethods(t *testing.T) {
 	source := `
 package p
 
@@ -57,7 +57,7 @@ func (s *S2) Hello() string {
 		for _, c := range candidats {
 			c := c
 			t.Run(fmt.Sprintf("lookup %s.%s'", c.obname, c.name), func(t *testing.T) {
-				got := LookupMethod(f, c.obname, c.name)
+				got := Method(f, c.obname, c.name)
 				if c.notfound {
 					if got != nil {
 						t.Fatalf("should %s is not found, but found %s", c.name, got.Name())
@@ -98,7 +98,7 @@ func (s *S2) Hello() string {
 		for _, c := range candidats {
 			c := c
 			t.Run(fmt.Sprintf("%s's methods", c.obname), func(t *testing.T) {
-				methods := LookupAllMethods(f, c.obname)
+				methods := AllMethods(f, c.obname)
 				if len(methods) != c.expectedCount {
 					t.Fatalf("should len(methods) == %d, but got %d", c.expectedCount, len(methods))
 				}

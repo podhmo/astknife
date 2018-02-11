@@ -15,7 +15,7 @@ func isSameTypeOrPointer(ob *ast.Object, fn ast.Node) bool {
 	case *ast.StarExpr:
 		return isSameTypeOrPointer(ob, t.X)
 	case *ast.Ident:
-		return t.Obj.Name == ob.Name
+		return t.Name == ob.Name
 	default:
 		return false
 	}
