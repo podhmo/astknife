@@ -5,6 +5,7 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -56,30 +57,36 @@ func (pf *PatchworkFile) Peek() error {
 }
 
 // Lookup :
-func (pf *PatchworkFile) Lookup(name string) *ast.Object {
-	return pf.File.Scope.Lookup(name)
-}
-
-// LookupMethod :
-func (pf *PatchworkFile) LookupMethod(obname, name string) *ast.FuncDecl {
-	return LookupMethod(pf.File, obname, name)
+func (pf *PatchworkFile) Lookup(name string) *LookupResult {
+	if strings.Contains(name, ".") {
+		obAndMethod := strings.SplitN(name, ".", 2)
+		return LookupMethod(pf.File, obAndMethod[0], obAndMethod[1])
+	}
+	return LookupToplevel(pf.File, name)
 }
 
 // LookupAllMethods :
-func (pf *PatchworkFile) LookupAllMethods(obname string) []*ast.FuncDecl {
+func (pf *PatchworkFile) LookupAllMethods(obname string) []*LookupResult {
 	return LookupAllMethods(pf.File, obname)
 }
 
 // Append :
-func (pf *PatchworkFile) Append(ob *ast.Object) (ok bool, err error) {
-	// todo: appending also ob's all methods, if ob is type?
-	return AppendToFile(pf.File, ob)
+func (pf *PatchworkFile) Append(r *LookupResult) (ok bool, err error) {
+	switch r.Type {
+	case LookupTypeToplevel:
+		return AppendToplevelToFile(pf.File, r.Object)
+	case LookupTypeMethod:
+		// toDO
+		return false, errors.New("not implemented")
+	default:
+		return false, errors.New("not implemented")
+	}
 }
 
 // todo: comment support
 
-// AppendToFile :
-func AppendToFile(dst *ast.File, ob *ast.Object) (ok bool, err error) {
+// AppendToplevelToFile :
+func AppendToplevelToFile(dst *ast.File, ob *ast.Object) (ok bool, err error) {
 	if ob == nil {
 		return
 	}

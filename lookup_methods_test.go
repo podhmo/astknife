@@ -55,7 +55,7 @@ func (s *S2) Hello() string {
 				got := LookupMethod(f.File, c.obname, c.name)
 				if c.notfound {
 					if got != nil {
-						t.Fatalf("should %s is not found, but found %s", c.name, got.Name.Name)
+						t.Fatalf("should %s is not found, but found %s", c.name, got.Name())
 					}
 					return
 				}
@@ -64,8 +64,8 @@ func (s *S2) Hello() string {
 					t.Fatalf("should %s is found, but not found", c.name)
 				}
 
-				if got.Name.Name != c.name {
-					t.Fatalf("should method name is %s, but got %s", c.name, got.Name.Name)
+				if got.Name() != c.name {
+					t.Fatalf("should method name is %s, but got %s", c.name, got.Name())
 				}
 			})
 		}
