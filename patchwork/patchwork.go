@@ -1,4 +1,4 @@
-package astknife
+package patchwork
 
 import (
 	"go/ast"
@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/podhmo/astknife/lookup"
+	"github.com/podhmo/astknife/printer"
 )
 
 // Patchwork : (todo rename)
@@ -21,13 +23,13 @@ func NewPatchwork() *Patchwork {
 }
 
 // ParseFile :
-func (pw *Patchwork) ParseFile(filename string, source interface{}) (*PatchworkFile, error) {
+func (pw *Patchwork) ParseFile(filename string, source interface{}) (*File, error) {
 	f, err := parser.ParseFile(pw.Fset, filename, source, parser.ParseComments)
-	return &PatchworkFile{Patchwork: pw, File: f}, err
+	return &File{Patchwork: pw, File: f}, err
 }
 
 // MustParseFile :
-func (pw *Patchwork) MustParseFile(filename string, source interface{}) *PatchworkFile {
+func (pw *Patchwork) MustParseFile(filename string, source interface{}) *File {
 	f, err := pw.ParseFile(filename, source)
 	if err != nil {
 		panic(err)
@@ -35,47 +37,47 @@ func (pw *Patchwork) MustParseFile(filename string, source interface{}) *Patchwo
 	return f
 }
 
-// PatchworkFile :
-type PatchworkFile struct {
+// File :
+type File struct {
 	*Patchwork
 	File *ast.File
 }
 
 // Print :
-func (pf *PatchworkFile) Print() error {
-	return PrintCode(pf.Fset, pf.File)
+func (pf *File) Print() error {
+	return printer.PrintCode(pf.Fset, pf.File)
 }
 
 // Fprint :
-func (pf *PatchworkFile) Fprint(w io.Writer) error {
-	return FprintCode(w, pf.Fset, pf.File)
+func (pf *File) Fprint(w io.Writer) error {
+	return printer.FprintCode(w, pf.Fset, pf.File)
 }
 
 // Peek :
-func (pf *PatchworkFile) Peek() error {
-	return PrintAST(pf.Fset, pf.File)
+func (pf *File) Peek() error {
+	return printer.PrintAST(pf.Fset, pf.File)
 }
 
 // Lookup :
-func (pf *PatchworkFile) Lookup(name string) *LookupResult {
+func (pf *File) Lookup(name string) *lookup.Result {
 	if strings.Contains(name, ".") {
 		obAndMethod := strings.SplitN(name, ".", 2)
-		return LookupMethod(pf.File, obAndMethod[0], obAndMethod[1])
+		return lookup.LookupMethod(pf.File, obAndMethod[0], obAndMethod[1])
 	}
-	return LookupToplevel(pf.File, name)
+	return lookup.LookupToplevel(pf.File, name)
 }
 
 // LookupAllMethods :
-func (pf *PatchworkFile) LookupAllMethods(obname string) []*LookupResult {
-	return LookupAllMethods(pf.File, obname)
+func (pf *File) LookupAllMethods(obname string) []*lookup.Result {
+	return lookup.LookupAllMethods(pf.File, obname)
 }
 
 // Append :
-func (pf *PatchworkFile) Append(r *LookupResult) (ok bool, err error) {
+func (pf *File) Append(r *lookup.Result) (ok bool, err error) {
 	switch r.Type {
-	case LookupTypeToplevel:
+	case lookup.TypeToplevel:
 		return AppendToplevelToFile(pf.File, r.Object)
-	case LookupTypeMethod:
+	case lookup.TypeMethod:
 		// toDO
 		return false, errors.New("not implemented")
 	default:

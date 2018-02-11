@@ -1,7 +1,9 @@
-package astknife
+package lookup
 
 import (
 	"fmt"
+	"go/parser"
+	"go/token"
 	"testing"
 )
 
@@ -26,8 +28,11 @@ func (s *S2) Hello() string {
 	return "s2.hello"
 }
 `
-	pw := NewPatchwork()
-	f := pw.MustParseFile("", source)
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "", source, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("method", func(t *testing.T) {
 		candidats := []struct {
@@ -52,7 +57,7 @@ func (s *S2) Hello() string {
 		for _, c := range candidats {
 			c := c
 			t.Run(fmt.Sprintf("lookup %s.%s'", c.obname, c.name), func(t *testing.T) {
-				got := LookupMethod(f.File, c.obname, c.name)
+				got := LookupMethod(f, c.obname, c.name)
 				if c.notfound {
 					if got != nil {
 						t.Fatalf("should %s is not found, but found %s", c.name, got.Name())
@@ -93,7 +98,7 @@ func (s *S2) Hello() string {
 		for _, c := range candidats {
 			c := c
 			t.Run(fmt.Sprintf("%s's methods", c.obname), func(t *testing.T) {
-				methods := LookupAllMethods(f.File, c.obname)
+				methods := LookupAllMethods(f, c.obname)
 				if len(methods) != c.expectedCount {
 					t.Fatalf("should len(methods) == %d, but got %d", c.expectedCount, len(methods))
 				}

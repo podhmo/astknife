@@ -1,4 +1,4 @@
-package astknife
+package printer
 
 import (
 	"go/ast"
