@@ -1,6 +1,7 @@
 package patchwork
 
 import (
+	"go/ast"
 	"go/parser"
 	"go/token"
 )
@@ -22,6 +23,13 @@ func (pw *Patchwork) ParseFile(filename string, source interface{}) (*File, erro
 	pw.scope.AddFile(filename, file)
 	f := &File{Patchwork: pw, File: file}
 	return f, err
+}
+
+// ParseAST :
+func (pw *Patchwork) ParseAST(filename string, file *ast.File) (*File, error) {
+	pw.scope.AddFile(filename, file)
+	f := &File{Patchwork: pw, File: file}
+	return f, nil
 }
 
 // MustParseFile :
