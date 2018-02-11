@@ -71,11 +71,11 @@ func Method(f *ast.File, obname string, name string) *Result {
 	if ob == nil {
 		return nil
 	}
-	return MethodFromObject(f, ob, name)
+	return MethodByObject(f, ob, name)
 }
 
-// MethodFromObject :
-func MethodFromObject(f *ast.File, ob *ast.Object, name string) *Result {
+// MethodByObject :
+func MethodByObject(f *ast.File, ob *ast.Object, name string) *Result {
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.FuncDecl); ok {
 			if isMethod(decl) && isSameTypeOrPointer(ob, decl.Recv.List[0].Type) {

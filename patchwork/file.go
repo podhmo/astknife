@@ -39,7 +39,7 @@ func (pf *File) Lookup(name string) *lookup.Result {
 			return nil
 		}
 		return pf.scope.Lookup(obAndMethod[1], pf.File, func(f *ast.File, name string) *lookup.Result {
-			return lookup.MethodFromObject(f, ob.Object, name)
+			return lookup.MethodByObject(f, ob.Object, name)
 		})
 	}
 	return pf.scope.Lookup(name, pf.File, lookup.Toplevel)
