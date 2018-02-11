@@ -80,7 +80,7 @@ func (s *S) Hello() string {
 			}
 
 			var b bytes.Buffer
-			if err := pf.Fprint(&b); err != nil {
+			if err := pf.FprintCode(&b); err != nil {
 				t.Fatal(err)
 			}
 			t.Logf("output\n%s\n", b.String())
