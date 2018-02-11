@@ -93,3 +93,29 @@ func (pf *File) Replace(r *lookup.Result) (ok bool, err error) {
 		return false, errors.New("not implemented")
 	}
 }
+
+// AppendOrReplace : upsert
+func (pf *File) AppendOrReplace(r *lookup.Result) (ok bool, err error) {
+	if r == nil {
+		return false, ErrNoEffect
+	}
+
+	switch r.Type {
+	case lookup.TypeToplevel:
+		drObject := pf.File.Scope.Lookup(r.Name())
+		if drObject == nil {
+			return appendToplevelToFile(pf.File, r.Object)
+		}
+		return replaceToplevelToFile(pf.File, drObject, r.Object)
+	case lookup.TypeMethod:
+		dr := pf.scope.Lookup(r.Name(), pf.File, func(f *ast.File, name string) *lookup.Result {
+			return lookup.MethodByObject(f, r.Object, name)
+		})
+		if dr == nil {
+			return appendFunctionToFile(pf.File, r.FuncDecl)
+		}
+		return replaceMethodToFile(pf.File, r.Object, dr.FuncDecl, r.FuncDecl)
+	default:
+		return false, errors.New("not implemented")
+	}
+}
