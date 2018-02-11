@@ -4,16 +4,16 @@ import (
 	"go/ast"
 )
 
-// isMethod :
-func isMethod(fn *ast.FuncDecl) bool {
+// IsMethod :
+func IsMethod(fn *ast.FuncDecl) bool {
 	return fn.Recv != nil
 }
 
-// isSameTypeOrPointer :
-func isSameTypeOrPointer(ob *ast.Object, fn ast.Node) bool {
+// IsSameTypeOrPointer :
+func IsSameTypeOrPointer(ob *ast.Object, fn ast.Node) bool {
 	switch t := fn.(type) {
 	case *ast.StarExpr:
-		return isSameTypeOrPointer(ob, t.X)
+		return IsSameTypeOrPointer(ob, t.X)
 	case *ast.Ident:
 		return t.Name == ob.Name
 	default:

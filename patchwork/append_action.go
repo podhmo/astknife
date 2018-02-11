@@ -5,24 +5,7 @@ import (
 	"go/token"
 
 	"github.com/pkg/errors"
-	"github.com/podhmo/astknife/lookup"
 )
-
-// Append :
-func (pf *File) Append(r *lookup.Result) (ok bool, err error) {
-	if r == nil {
-		return false, ErrNotFound
-	}
-
-	switch r.Type {
-	case lookup.TypeToplevel:
-		return AppendToplevelToFile(pf.File, r.Object)
-	case lookup.TypeMethod:
-		return AppendFunctionToFile(pf.File, r.FuncDecl)
-	default:
-		return false, errors.New("not implemented")
-	}
-}
 
 // todo: all object types support
 // // The list of possible Object kinds.
@@ -38,8 +21,8 @@ func (pf *File) Append(r *lookup.Result) (ok bool, err error) {
 
 // todo: comment support
 
-// AppendToplevelToFile :
-func AppendToplevelToFile(dst *ast.File, ob *ast.Object) (ok bool, err error) {
+// appendToplevelToFile :
+func appendToplevelToFile(dst *ast.File, ob *ast.Object) (ok bool, err error) {
 	if ob == nil {
 		return
 	}
@@ -59,16 +42,19 @@ func AppendToplevelToFile(dst *ast.File, ob *ast.Object) (ok bool, err error) {
 		ok = true
 	case ast.Fun:
 		if decl, can := ob.Decl.(*ast.FuncDecl); can {
-			return AppendFunctionToFile(dst, decl)
+			return appendFunctionToFile(dst, decl)
 		}
+		err = errors.Errorf("unsupported object type %s (kind=%q)", ob.Type, ob.Kind)
+		return
+	default:
 		err = errors.Errorf("unsupported object type %s (kind=%q)", ob.Type, ob.Kind)
 		return
 	}
 	return
 }
 
-// AppendFunctionToFile :
-func AppendFunctionToFile(dst *ast.File, decl *ast.FuncDecl) (ok bool, err error) {
+// appendFunctionToFile :
+func appendFunctionToFile(dst *ast.File, decl *ast.FuncDecl) (ok bool, err error) {
 	if decl == nil {
 		return
 	}

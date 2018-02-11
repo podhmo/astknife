@@ -2,14 +2,24 @@ package patchwork
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 )
 
-// TestAppend
-func TestAppend(t *testing.T) {
+// TestReplace
+func TestReplace(t *testing.T) {
 	source := `
 package p
-type S struct {}
+type S struct {
+	Before string ` + "`" + `replaced:"false"` + "`" + `
+}
+func (s *S) String() string {
+	return ` + "`" + `replaced:"false"` + "`" + `
+}
+
+func Hello() string {
+	return ` + "`" + `replaced:"false"` + "`" + `
+}
 `
 	type C struct {
 		source  string
@@ -22,45 +32,33 @@ type S struct {}
 	candidates := []C{
 		{
 			source: source,
-			msg:    "append struct",
-			name:   "S2",
+			msg:    "replace struct",
+			name:   "S",
 			source2: `
-		package p
-		type S2 struct {}
-		`,
-		},
-		{
-			source:  source,
-			msg:     "append struct, already existed, no effect",
-			name:    "S",
-			source2: source,
-			hasErr:  true,
+package p
+type S struct {
+	After string ` + "`" + `replaced:"true"` + "`" + `
+}`,
 		},
 		{
 			source: source,
-			msg:    "append functoin",
+			msg:    "replace function",
 			name:   "Hello",
 			source2: `
 package p
 func Hello() string {
-	return "hello"
-}
-type S2 struct {}
-func (s *S2) Hello() string {
-	return "s.hello"
-}
-`,
+	return ` + "`" + `replaced:"true"` + "`" + `
+}`,
 		},
 		{
 			source: source,
-			msg:    "append method",
-			name:   "S.Hello",
+			msg:    "replace method",
+			name:   "S.String",
 			source2: `
 package p
-func (s *S) Hello() string {
-	return "s.hello"
-}
-`,
+func (s *S) String() string {
+	return ` + "`" + `replaced:"true"` + "`" + `
+}`,
 		},
 	}
 
@@ -71,9 +69,9 @@ func (s *S) Hello() string {
 			pf2 := pf.MustParseFile("f1", c.source2)
 
 			t.Logf("input (%s)\n%s\n", c.name, c.source)
-			t.Logf("append (%s)\n%s\n", c.name, c.source2)
+			t.Logf("replace (%s)\n%s\n", c.name, c.source2)
 
-			ok, err := pf.Append(pf2.Lookup(c.name))
+			ok, err := pf.Replace(pf2.Lookup(c.name))
 
 			if c.hasErr {
 				t.Logf("should error %s", err)
@@ -94,11 +92,12 @@ func (s *S) Hello() string {
 			}
 
 			if !ok {
-				t.Fatal("must appended")
+				t.Fatal("must replaceed")
 			}
 
-			if pf.Lookup(c.name) == nil {
-				t.Fatalf("cannot lookup appended object (%q)", c.name)
+			// tentative assertion
+			if !strings.Contains(b.String(), `replaced:"true"`) {
+				t.Fatalf("cannot replaced (%q)", c.name)
 			}
 		})
 	}

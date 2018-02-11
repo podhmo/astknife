@@ -54,7 +54,7 @@ func AllMethods(f *ast.File, obname string) []*Result {
 	var r []*Result
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.FuncDecl); ok {
-			if isMethod(decl) && isSameTypeOrPointer(ob, decl.Recv.List[0].Type) {
+			if IsMethod(decl) && IsSameTypeOrPointer(ob, decl.Recv.List[0].Type) {
 				r = append(r, &Result{
 					Type:     TypeMethod,
 					FuncDecl: decl,
@@ -78,10 +78,11 @@ func Method(f *ast.File, obname string, name string) *Result {
 func MethodByObject(f *ast.File, ob *ast.Object, name string) *Result {
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.FuncDecl); ok {
-			if isMethod(decl) && isSameTypeOrPointer(ob, decl.Recv.List[0].Type) {
+			if IsMethod(decl) && IsSameTypeOrPointer(ob, decl.Recv.List[0].Type) {
 				if decl.Name.Name == name {
 					return &Result{
 						Type:     TypeMethod,
+						Object:   ob,
 						FuncDecl: decl,
 					}
 				}

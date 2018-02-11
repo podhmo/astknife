@@ -10,12 +10,14 @@ import (
 
 // FprintCode :
 func FprintCode(w io.Writer, fset *token.FileSet, node ast.Node) error {
-	return printer.Fprint(w, fset, node)
+	config := &printer.Config{Tabwidth: 8, Mode: printer.TabIndent}
+	return config.Fprint(w, fset, node)
 }
 
 // PrintCode :
 func PrintCode(fset *token.FileSet, node ast.Node) error {
-	return printer.Fprint(os.Stdout, fset, node)
+	config := &printer.Config{Tabwidth: 8, Mode: printer.TabIndent}
+	return config.Fprint(os.Stdout, fset, node)
 }
 
 // PrintAST :
