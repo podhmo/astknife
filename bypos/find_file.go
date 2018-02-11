@@ -1,12 +1,12 @@
-package astknife
+package bypos
 
 import (
 	"go/ast"
 	"go/token"
 )
 
-// FindFileByPos :
-func FindFileByPos(files []*ast.File, pos token.Pos) *ast.File {
+// FindFile :
+func FindFile(files []*ast.File, pos token.Pos) *ast.File {
 	var found *ast.File
 	for _, f := range files {
 		if pos >= f.Pos() {

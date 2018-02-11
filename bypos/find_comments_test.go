@@ -1,4 +1,4 @@
-package astknife
+package bypos
 
 import (
 	"go/ast"
@@ -127,7 +127,7 @@ const (
 	for _, c := range candidates {
 		c := c
 		t.Run(c.msg, func(t *testing.T) {
-			comments := FindCommentsByPos(files, c.getPos())
+			comments := FindComments(files, c.getPos())
 			if !strings.Contains(comments.Text(), c.comment) {
 				t.Errorf("expected contains %q, but got %q", c.comment, comments.Text())
 			}

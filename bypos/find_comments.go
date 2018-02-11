@@ -1,4 +1,4 @@
-package astknife
+package bypos
 
 import (
 	"go/ast"
@@ -8,9 +8,9 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 )
 
-// FindCommentsByPos :
-func FindCommentsByPos(files []*ast.File, pos token.Pos) *ast.CommentGroup {
-	file := FindFileByPos(files, pos)
+// FindComments :
+func FindComments(files []*ast.File, pos token.Pos) *ast.CommentGroup {
+	file := FindFile(files, pos)
 	if file == nil {
 		return nil
 	}
