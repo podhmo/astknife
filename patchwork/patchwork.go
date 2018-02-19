@@ -13,8 +13,25 @@ type Patchwork struct {
 }
 
 // NewPatchwork :
-func NewPatchwork() *Patchwork {
-	return &Patchwork{Fset: token.NewFileSet(), scope: newscope()}
+func NewPatchwork(opts ...func(*Patchwork)) *Patchwork {
+	pw := &Patchwork{}
+	for _, op := range opts {
+		op(pw)
+	}
+	if pw.Fset == nil {
+		pw.Fset = token.NewFileSet()
+	}
+	if pw.scope == nil {
+		pw.scope = newscope()
+	}
+	return pw
+}
+
+// WithFileSet :
+func WithFileSet(fset *token.FileSet) func(*Patchwork) {
+	return func(pw *Patchwork) {
+		pw.Fset = fset
+	}
 }
 
 // ParseFile :
