@@ -9,8 +9,8 @@ import (
 )
 
 // FindComments :
-func FindComments(files []*ast.File, pos token.Pos) *ast.CommentGroup {
-	file := FindFile(files, pos)
+func FindComments(sorted Sorted, pos token.Pos) *ast.CommentGroup {
+	file := FindFile(sorted, pos)
 	if file == nil {
 		return nil
 	}
