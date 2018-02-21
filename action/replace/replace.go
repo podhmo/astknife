@@ -1,4 +1,4 @@
-package patchwork
+package replace
 
 import (
 	"go/ast"
@@ -21,8 +21,8 @@ import (
 
 // todo: comment support
 
-// replaceToplevelToFile :
-func replaceToplevelToFile(dst *ast.File, dstOb *ast.Object, ob *ast.Object) (ok bool, err error) {
+//ToplevelToFile :
+func ToplevelToFile(dst *ast.File, dstOb *ast.Object, ob *ast.Object) (ok bool, err error) {
 	if ob == nil {
 		return
 	}
@@ -39,7 +39,7 @@ func replaceToplevelToFile(dst *ast.File, dstOb *ast.Object, ob *ast.Object) (ok
 			err = errors.Errorf("invalid object type %s replacement (kind=%q)", ob.Type, ob.Kind) // xxx
 			return
 		}
-		return replaceSpecToFile(dst, dstSpec, replacement)
+		return SpecToFile(dst, dstSpec, replacement)
 	case ast.Fun:
 		dstDecl, can := dstOb.Decl.(*ast.FuncDecl)
 		if !can {
@@ -51,15 +51,15 @@ func replaceToplevelToFile(dst *ast.File, dstOb *ast.Object, ob *ast.Object) (ok
 			err = errors.Errorf("invalid object type %s replacement (kind=%q)", ob.Type, ob.Kind) // xxx
 			return
 		}
-		return replaceFunctionToFile(dst, dstDecl, replacement)
+		return FunctionToFile(dst, dstDecl, replacement)
 	default:
 		err = errors.Errorf("unsupported object type %s (kind=%q)", ob.Type, ob.Kind)
 		return
 	}
 }
 
-// replaceSpecToFile :
-func replaceSpecToFile(dst *ast.File, dstSpec ast.Spec, replacement ast.Spec) (ok bool, err error) {
+//SpecToFile :
+func SpecToFile(dst *ast.File, dstSpec ast.Spec, replacement ast.Spec) (ok bool, err error) {
 	ast.Inspect(dst, func(node ast.Node) bool {
 		switch t := node.(type) {
 		case *ast.GenDecl:
@@ -82,8 +82,8 @@ func replaceSpecToFile(dst *ast.File, dstSpec ast.Spec, replacement ast.Spec) (o
 	return
 }
 
-// replaceFunctionToFile :
-func replaceFunctionToFile(dst *ast.File, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl) (ok bool, err error) {
+// FunctionToFile :
+func FunctionToFile(dst *ast.File, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl) (ok bool, err error) {
 	if replacement == nil {
 		return
 	}
@@ -97,8 +97,8 @@ func replaceFunctionToFile(dst *ast.File, dstDecl *ast.FuncDecl, replacement *as
 	return
 }
 
-// replaceMethodToFile :
-func replaceMethodToFile(dst *ast.File, ob *ast.Object, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl) (ok bool, err error) {
+// MethodToFile :
+func MethodToFile(dst *ast.File, ob *ast.Object, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl) (ok bool, err error) {
 	if replacement == nil {
 		return
 	}

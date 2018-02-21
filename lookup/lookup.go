@@ -2,6 +2,7 @@ package lookup
 
 import (
 	"go/ast"
+	"strings"
 )
 
 // Type :
@@ -90,4 +91,13 @@ func MethodByObject(f *ast.File, ob *ast.Object, name string) *Result {
 		}
 	}
 	return nil
+}
+
+// Lookup :
+func Lookup(f *ast.File, name string) *Result {
+	if strings.Contains(name, ".") {
+		obAndMethod := strings.SplitN(name, ".", 2)
+		return Method(f, obAndMethod[0], obAndMethod[1])
+	}
+	return Toplevel(f, name)
 }

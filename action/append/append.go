@@ -1,4 +1,4 @@
-package patchwork
+package append
 
 import (
 	"go/ast"
@@ -21,8 +21,8 @@ import (
 
 // todo: comment support
 
-// appendToplevelToFile :
-func appendToplevelToFile(dst *ast.File, ob *ast.Object) (ok bool, err error) {
+// ToplevelToFile :
+func ToplevelToFile(dst *ast.File, ob *ast.Object) (ok bool, err error) {
 	if ob == nil {
 		return
 	}
@@ -42,7 +42,7 @@ func appendToplevelToFile(dst *ast.File, ob *ast.Object) (ok bool, err error) {
 		ok = true
 	case ast.Fun:
 		if decl, can := ob.Decl.(*ast.FuncDecl); can {
-			return appendFunctionToFile(dst, decl)
+			return FunctionToFile(dst, decl)
 		}
 		err = errors.Errorf("unsupported object type %s (kind=%q)", ob.Type, ob.Kind)
 		return
@@ -53,8 +53,8 @@ func appendToplevelToFile(dst *ast.File, ob *ast.Object) (ok bool, err error) {
 	return
 }
 
-// appendFunctionToFile :
-func appendFunctionToFile(dst *ast.File, decl *ast.FuncDecl) (ok bool, err error) {
+// FunctionToFile :
+func FunctionToFile(dst *ast.File, decl *ast.FuncDecl) (ok bool, err error) {
 	if decl == nil {
 		return
 	}
