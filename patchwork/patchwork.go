@@ -4,12 +4,14 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+
+	"github.com/podhmo/astknife/lookup"
 )
 
 // Patchwork : (todo rename)
 type Patchwork struct {
-	Fset  *token.FileSet
-	scope *scope
+	Fset   *token.FileSet
+	lookup *lookup.Lookup
 }
 
 // NewPatchwork :
@@ -21,8 +23,8 @@ func NewPatchwork(opts ...func(*Patchwork)) *Patchwork {
 	if pw.Fset == nil {
 		pw.Fset = token.NewFileSet()
 	}
-	if pw.scope == nil {
-		pw.scope = newscope()
+	if pw.lookup == nil {
+		pw.lookup = lookup.New()
 	}
 	return pw
 }
@@ -34,17 +36,24 @@ func WithFileSet(fset *token.FileSet) func(*Patchwork) {
 	}
 }
 
+// WithLookup :
+func WithLookup(lookup *lookup.Lookup) func(*Patchwork) {
+	return func(pw *Patchwork) {
+		pw.lookup = lookup
+	}
+}
+
 // ParseFile :
 func (pw *Patchwork) ParseFile(filename string, source interface{}) (*File, error) {
 	file, err := parser.ParseFile(pw.Fset, filename, source, parser.ParseComments)
-	pw.scope.AddFile(filename, file)
+	pw.lookup.Files = append(pw.lookup.Files, file)
 	f := &File{Patchwork: pw, File: file}
 	return f, err
 }
 
 // ParseAST :
 func (pw *Patchwork) ParseAST(filename string, file *ast.File) (*File, error) {
-	pw.scope.AddFile(filename, file)
+	pw.lookup.Files = append(pw.lookup.Files, file)
 	f := &File{Patchwork: pw, File: file}
 	return f, nil
 }

@@ -10,9 +10,9 @@ import (
 )
 
 // Append :
-func Append(f *ast.File, r *lookup.Result) (ok bool, err error) {
+func Append(k *lookup.Lookup, f *ast.File, r *lookup.Result) (ok bool, err error) {
 	if r == nil {
-		return false, ErrNoEffect
+		return false, ErrReplacementNotFound
 	}
 
 	switch r.Type {
@@ -26,22 +26,22 @@ func Append(f *ast.File, r *lookup.Result) (ok bool, err error) {
 }
 
 // Replace :
-func Replace(f *ast.File, r *lookup.Result) (ok bool, err error) {
+func Replace(k *lookup.Lookup, f *ast.File, r *lookup.Result) (ok bool, err error) {
 	if r == nil {
-		return false, ErrNoEffect
+		return false, ErrReplacementNotFound
 	}
 
 	switch r.Type {
 	case lookup.TypeToplevel:
 		drObject := f.Scope.Lookup(r.Name())
 		if drObject == nil {
-			return false, ErrNotFound
+			return false, ErrTargetNotFound
 		}
 		return replace.ToplevelToFile(f, drObject, r.Object)
 	case lookup.TypeMethod:
-		dr := lookup.MethodByObject(f, r.Object, r.Name())
+		dr := k.MethodByObject(r.Object, r.Name())
 		if dr == nil {
-			return false, ErrNotFound
+			return false, ErrTargetNotFound
 		}
 		return replace.MethodToFile(f, r.Object, dr.FuncDecl, r.FuncDecl)
 	default:
@@ -50,9 +50,9 @@ func Replace(f *ast.File, r *lookup.Result) (ok bool, err error) {
 }
 
 // AppendOrReplace : upsert
-func AppendOrReplace(f *ast.File, r *lookup.Result) (ok bool, err error) {
+func AppendOrReplace(k *lookup.Lookup, f *ast.File, r *lookup.Result) (ok bool, err error) {
 	if r == nil {
-		return false, ErrNoEffect
+		return false, ErrReplacementNotFound
 	}
 
 	switch r.Type {
@@ -63,7 +63,7 @@ func AppendOrReplace(f *ast.File, r *lookup.Result) (ok bool, err error) {
 		}
 		return replace.ToplevelToFile(f, drObject, r.Object)
 	case lookup.TypeMethod:
-		dr := lookup.MethodByObject(f, r.Object, r.Name())
+		dr := k.MethodByObject(r.Object, r.Name())
 		if dr == nil {
 			return append.FunctionToFile(f, r.FuncDecl)
 		}

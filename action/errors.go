@@ -3,8 +3,18 @@ package action
 import "github.com/pkg/errors"
 
 var (
-	// ErrNoEffect :
-	ErrNoEffect = errors.New("no effect")
-	// ErrNotFound :
-	ErrNotFound = errors.New("not found")
+	// ErrReplacementNotFound :
+	ErrReplacementNotFound = errors.New("replacement not found")
+	// ErrTargetNotFound :
+	ErrTargetNotFound = errors.New("target not found")
 )
+
+// IsNoEffect :
+func IsNoEffect(err error) bool {
+	switch errors.Cause(err) {
+	case ErrReplacementNotFound, ErrTargetNotFound:
+		return true
+	default:
+		return false
+	}
+}

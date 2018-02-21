@@ -55,10 +55,10 @@ func Hello() string {
 			msg:    "replace method",
 			name:   "S.String",
 			source2: `
-package p
-func (s *S) String() string {
-	return ` + "`" + `replaced:"true"` + "`" + `
-}`,
+		package p
+		func (s *S) String() string {
+			return ` + "`" + `replaced:"true"` + "`" + `
+		}`,
 		},
 	}
 
@@ -66,12 +66,12 @@ func (s *S) String() string {
 		c := c
 		t.Run(c.msg, func(t *testing.T) {
 			pf := NewPatchwork().MustParseFile("f0", source)
-			pf2 := pf.MustParseFile("f1", c.source2)
+			pf1 := NewPatchwork().MustParseFile("f1", c.source2)
 
 			t.Logf("input (%s)\n%s\n", c.name, c.source)
 			t.Logf("replace (%s)\n%s\n", c.name, c.source2)
 
-			ok, err := pf.Replace(pf2.Lookup(c.name))
+			ok, err := pf.Replace(pf1.Wrap(pf.Patchwork).Lookup(c.name))
 
 			if c.hasErr {
 				t.Logf("should error %s", err)
@@ -79,6 +79,8 @@ func (s *S) String() string {
 					t.Fatal("error is expected, but no error")
 				}
 				return
+			} else if err != nil {
+				t.Fatal(err)
 			}
 
 			var b bytes.Buffer

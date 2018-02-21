@@ -5,37 +5,45 @@ import (
 	"strings"
 )
 
-// Type :
-type Type string
-
-const (
-	// TypeToplevel : toplevel (e.g. toplevel function, struct definition)
-	TypeToplevel = Type("toplevel")
-	// TypeMethod : method (e.g. method function, struct definition)
-	TypeMethod = Type("method")
-)
-
-// Result :
-type Result struct {
-	Type     Type
-	FuncDecl *ast.FuncDecl
-	Object   *ast.Object
+// Lookup :
+type Lookup struct {
+	lookup func(name string) *ast.Object
+	Files  []*ast.File
 }
 
-// Name :
-func (r *Result) Name() string {
-	switch r.Type {
-	case TypeToplevel:
-		return r.Object.Name
-	case TypeMethod:
-		return r.FuncDecl.Name.Name
+// New :
+func New(files ...*ast.File) *Lookup {
+	k := &Lookup{Files: files}
+	k.lookup = func(name string) *ast.Object {
+		for _, f := range k.Files {
+			if ob := f.Scope.Lookup(name); ob != nil {
+				return ob
+			}
+		}
+		return nil
 	}
-	return "<nil>"
+	return k
+}
+
+// With :
+func (k *Lookup) With(file *ast.File) *Lookup {
+	files := []*ast.File{file}
+	files = append(files, k.Files...)
+	return New(files...)
+}
+
+// Lookup :
+func (k *Lookup) Lookup(name string) *Result {
+	if strings.Contains(name, ".") {
+		obAndMethod := strings.SplitN(name, ".", 2)
+		return k.Method(obAndMethod[0], obAndMethod[1])
+	}
+	return k.Toplevel(name)
 }
 
 // Toplevel :
-func Toplevel(file *ast.File, name string) *Result {
-	raw := file.Scope.Lookup(name)
+func (k *Lookup) Toplevel(name string) *Result {
+	raw := k.lookup(name)
 	if raw == nil {
 		return nil
 	}
@@ -46,20 +54,22 @@ func Toplevel(file *ast.File, name string) *Result {
 }
 
 // AllMethods :
-func AllMethods(f *ast.File, obname string) []*Result {
-	ob := f.Scope.Lookup(obname)
+func (k *Lookup) AllMethods(obname string) []*Result {
+	ob := k.lookup(obname)
 	if ob == nil {
 		return nil
 	}
 
 	var r []*Result
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.FuncDecl); ok {
-			if IsMethod(decl) && IsSameTypeOrPointer(ob, decl.Recv.List[0].Type) {
-				r = append(r, &Result{
-					Type:     TypeMethod,
-					FuncDecl: decl,
-				})
+	for _, f := range k.Files {
+		for _, decl := range f.Decls {
+			if decl, ok := decl.(*ast.FuncDecl); ok {
+				if IsMethod(decl) && IsSameTypeOrPointer(ob, decl.Recv.List[0].Type) {
+					r = append(r, &Result{
+						Type:     TypeMethod,
+						FuncDecl: decl,
+					})
+				}
 			}
 		}
 	}
@@ -67,37 +77,30 @@ func AllMethods(f *ast.File, obname string) []*Result {
 }
 
 // Method :
-func Method(f *ast.File, obname string, name string) *Result {
-	ob := f.Scope.Lookup(obname)
+func (k *Lookup) Method(obname string, name string) *Result {
+	ob := k.lookup(obname)
 	if ob == nil {
 		return nil
 	}
-	return MethodByObject(f, ob, name)
+	return k.MethodByObject(ob, name)
 }
 
 // MethodByObject :
-func MethodByObject(f *ast.File, ob *ast.Object, name string) *Result {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.FuncDecl); ok {
-			if IsMethod(decl) && IsSameTypeOrPointer(ob, decl.Recv.List[0].Type) {
-				if decl.Name.Name == name {
-					return &Result{
-						Type:     TypeMethod,
-						Object:   ob,
-						FuncDecl: decl,
+func (k *Lookup) MethodByObject(ob *ast.Object, name string) *Result {
+	for _, f := range k.Files {
+		for _, decl := range f.Decls {
+			if decl, ok := decl.(*ast.FuncDecl); ok {
+				if IsMethod(decl) && IsSameTypeOrPointer(ob, decl.Recv.List[0].Type) {
+					if decl.Name.Name == name {
+						return &Result{
+							Type:     TypeMethod,
+							Object:   ob,
+							FuncDecl: decl,
+						}
 					}
 				}
 			}
 		}
 	}
 	return nil
-}
-
-// Lookup :
-func Lookup(f *ast.File, name string) *Result {
-	if strings.Contains(name, ".") {
-		obAndMethod := strings.SplitN(name, ".", 2)
-		return Method(f, obAndMethod[0], obAndMethod[1])
-	}
-	return Toplevel(f, name)
 }

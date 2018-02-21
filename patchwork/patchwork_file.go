@@ -3,7 +3,6 @@ package patchwork
 import (
 	"go/ast"
 	"io"
-	"strings"
 
 	"github.com/podhmo/astknife/action"
 	"github.com/podhmo/astknife/lookup"
@@ -33,36 +32,37 @@ func (pf *File) PrintAST() error {
 
 // Lookup :
 func (pf *File) Lookup(name string) *lookup.Result {
-	if strings.Contains(name, ".") {
-		obAndMethod := strings.SplitN(name, ".", 2)
-		ob := pf.scope.Lookup(obAndMethod[0], pf.File, lookup.Toplevel)
-		if ob == nil {
-			return nil
-		}
-		return pf.scope.Lookup(obAndMethod[1], pf.File, func(f *ast.File, name string) *lookup.Result {
-			return lookup.MethodByObject(f, ob.Object, name)
-		})
-	}
-	return pf.scope.Lookup(name, pf.File, lookup.Toplevel)
+	return pf.lookup.Lookup(name)
 }
 
 // LookupAllMethods :
 func (pf *File) LookupAllMethods(obname string) []*lookup.Result {
 	// todo: xxx
-	return lookup.AllMethods(pf.File, obname)
+	return pf.lookup.AllMethods(obname)
 }
 
 // Append :
 func (pf *File) Append(r *lookup.Result) (ok bool, err error) {
-	return action.Append(pf.File, r)
+	return action.Append(pf.lookup, pf.File, r)
 }
 
 // Replace :
 func (pf *File) Replace(r *lookup.Result) (ok bool, err error) {
-	return action.Replace(pf.File, r)
+	return action.Replace(pf.lookup, pf.File, r)
 }
 
 // AppendOrReplace : upsert
 func (pf *File) AppendOrReplace(r *lookup.Result) (ok bool, err error) {
-	return action.AppendOrReplace(pf.File, r)
+	return action.AppendOrReplace(pf.lookup, pf.File, r)
+}
+
+// Wrap : xxx
+func (pf *File) Wrap(pw *Patchwork) *File {
+	return &File{
+		Patchwork: &Patchwork{
+			Fset:   pw.Fset,
+			lookup: pw.lookup.With(pf.File),
+		},
+		File: pf.File,
+	}
 }
