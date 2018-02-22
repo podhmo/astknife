@@ -104,7 +104,7 @@ func MethodToFile(dst *ast.File, ob *ast.Object, dstDecl *ast.FuncDecl, replacem
 	}
 	for i, decl := range dst.Decls {
 		if decl, can := decl.(*ast.FuncDecl); can {
-			if lookup.IsMethod(decl) && lookup.IsSameTypeOrPointer(ob, decl.Recv.List[0].Type) {
+			if lookup.IsMethod(decl) && decl == dstDecl {
 				dst.Decls[i] = replacement
 				ok = true
 			}
