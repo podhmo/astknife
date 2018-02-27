@@ -5,6 +5,7 @@ import (
 	"go/token"
 
 	"github.com/pkg/errors"
+	"github.com/podhmo/astknife/action/comment"
 	"github.com/podhmo/astknife/lookup"
 )
 
@@ -58,7 +59,7 @@ The reason of this, go/printer's printing method depends on physical position(to
 */
 
 // Toplevel :
-func Toplevel(fset *token.FileSet, dst *ast.File, dstOb *ast.Object, replacement *ast.Object) (ok bool, err error) {
+func Toplevel(fset *token.FileSet, dst *ast.File, dstOb *ast.Object, replacement *ast.Object, comments []*ast.CommentGroup) (ok bool, err error) {
 	if replacement == nil {
 		return
 	}
@@ -75,7 +76,7 @@ func Toplevel(fset *token.FileSet, dst *ast.File, dstOb *ast.Object, replacement
 			err = errors.Errorf("invalid object type %s replacement (kind=%q)", replacement.Type, replacement.Kind) // xxx
 			return
 		}
-		return Spec(fset, dst, dstSpec, t)
+		return Spec(fset, dst, dstSpec, t, comments)
 	case ast.Fun:
 		dstDecl, can := dstOb.Decl.(*ast.FuncDecl)
 		if !can {
@@ -87,7 +88,7 @@ func Toplevel(fset *token.FileSet, dst *ast.File, dstOb *ast.Object, replacement
 			err = errors.Errorf("invalid object type %s replacement (kind=%q)", t.Type, replacement.Kind) // xxx
 			return
 		}
-		return Function(fset, dst, dstDecl, t)
+		return Function(fset, dst, dstDecl, t, comments)
 	default:
 		err = errors.Errorf("unsupported object type %s (kind=%q)", replacement.Type, replacement.Kind)
 		return
@@ -95,7 +96,7 @@ func Toplevel(fset *token.FileSet, dst *ast.File, dstOb *ast.Object, replacement
 }
 
 // Spec :
-func Spec(fset *token.FileSet, dst *ast.File, dstSpec ast.Spec, replacement ast.Spec) (ok bool, err error) {
+func Spec(fset *token.FileSet, dst *ast.File, dstSpec ast.Spec, replacement ast.Spec, comments []*ast.CommentGroup) (ok bool, err error) {
 	ast.Inspect(dst, func(node ast.Node) bool {
 		switch t := node.(type) {
 		case *ast.GenDecl:
@@ -110,6 +111,7 @@ func Spec(fset *token.FileSet, dst *ast.File, dstSpec ast.Spec, replacement ast.
 			}
 			t.Specs = newspec
 			return false
+			// todo:
 			// case *ast.FuncDecl:
 			// case *ast.BadDecl:
 		}
@@ -119,14 +121,20 @@ func Spec(fset *token.FileSet, dst *ast.File, dstSpec ast.Spec, replacement ast.
 }
 
 // Function :
-func Function(fset *token.FileSet, dst *ast.File, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl) (ok bool, err error) {
+func Function(fset *token.FileSet, dst *ast.File, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl, comments []*ast.CommentGroup) (ok bool, err error) {
 	if replacement == nil {
 		return
 	}
+
 	for i, decl := range dst.Decls {
 		if decl == dstDecl {
 			dst.Decls[i] = replacement
 			ok = true
+
+			// todo: performance tuning
+			s := comment.New(fset, dst)
+			s.ReplaceFromOther(decl, replacement, comment.CollectFromNode(comments, replacement))
+			dst.Comments = s.Comments()
 			return
 		}
 	}
@@ -134,7 +142,7 @@ func Function(fset *token.FileSet, dst *ast.File, dstDecl *ast.FuncDecl, replace
 }
 
 // Method :
-func Method(fset *token.FileSet, dst *ast.File, ob *ast.Object, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl) (ok bool, err error) {
+func Method(fset *token.FileSet, dst *ast.File, ob *ast.Object, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl, comments []*ast.CommentGroup) (ok bool, err error) {
 	if replacement == nil {
 		return
 	}

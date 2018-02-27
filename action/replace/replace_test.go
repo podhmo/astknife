@@ -2,7 +2,6 @@ package replace
 
 import (
 	"bytes"
-	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -13,35 +12,48 @@ func TestReplace(t *testing.T) {
 	code0 := `
 package p
 
-// F :
+// F : 0
 func F() int {
+	// this is f0's comment
 	return 10
 }
 
-// G :
+// G : 0
 func G() int {
+	// this is g0's comment
 	return 20
 }
 `
 	code1 := `
 package p
 
-// F :
+// F : 1
 func F() int {
+	// this is f1's comment
 	x := 5
+	return x + x
+}
+
+// G : 1
+func G() int {
+	// this is g1's comment
+	x := 10
 	return x + x
 }
 `
 	code2 := `
 package p
 
-// G :
+// hmm
+
+// G : 2
 func G() int {
-	x := 10
-	return x + x
+	// this is g2's comment
+	x := 5
+	return x + x + x + x
 }
 `
-
+	// todo: doc comment is not found
 	type C struct {
 		msg  string
 		code string
@@ -79,7 +91,7 @@ func G() int {
 				t.Fatal(err)
 			}
 
-			replaced, err := ToplevelToFile(f0, f0.Scope.Lookup(c.name), f1.Scope.Lookup(c.name))
+			replaced, err := Toplevel(fset, f0, f0.Scope.Lookup(c.name), f1.Scope.Lookup(c.name), f1.Comments)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -89,7 +101,6 @@ func G() int {
 
 			var b bytes.Buffer
 			printer.Fprint(&b, fset, f0)
-			ast.Fprint(&b, fset, f0, nil)
 			t.Log(b.String())
 		})
 	}
