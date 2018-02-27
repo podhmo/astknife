@@ -2,6 +2,7 @@ package replace
 
 import (
 	"bytes"
+	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -49,6 +50,11 @@ func G() int {
 
 	candidates := []C{
 		{
+			msg:  "replace f0.F to f0.F",
+			code: code0,
+			name: "F",
+		},
+		{
 			msg:  "replace f0.F to f1.F",
 			code: code1,
 			name: "F",
@@ -83,6 +89,7 @@ func G() int {
 
 			var b bytes.Buffer
 			printer.Fprint(&b, fset, f0)
+			ast.Fprint(&b, fset, f0, nil)
 			t.Log(b.String())
 		})
 	}
