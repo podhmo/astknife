@@ -21,7 +21,7 @@ import (
 
 // todo: comment support
 
-//ToplevelToFile :
+// ToplevelToFile :
 func ToplevelToFile(dst *ast.File, dstOb *ast.Object, ob *ast.Object) (ok bool, err error) {
 	if ob == nil {
 		return
@@ -58,7 +58,7 @@ func ToplevelToFile(dst *ast.File, dstOb *ast.Object, ob *ast.Object) (ok bool, 
 	}
 }
 
-//SpecToFile :
+// SpecToFile :
 func SpecToFile(dst *ast.File, dstSpec ast.Spec, replacement ast.Spec) (ok bool, err error) {
 	ast.Inspect(dst, func(node ast.Node) bool {
 		switch t := node.(type) {
