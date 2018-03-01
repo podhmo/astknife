@@ -64,7 +64,9 @@ func (a *aggregator) aggregateGencDeclRef(dref *DeclRef) ast.Decl {
 	if dref.Replacement != nil {
 		offset := int(-dref.Replacement.Pos()) + a.base
 		if len(dref.Comments) > 0 {
-			offset += int(dref.Replacement.Pos() - dref.Comments[0].Pos())
+            if dref.Replacement.Pos() > dref.Comments[0].Pos() {
+                offset += int(dref.Replacement.Pos() - dref.Comments[0].Pos())
+            }
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
 
@@ -101,7 +103,9 @@ func (a *aggregator) aggregateGencDeclRef(dref *DeclRef) ast.Decl {
 		offset := int(-dref.Original.Pos()) + a.base
 		fmt.Println("**GenDecl***", "@offset", offset, "@base", a.base)
 		if len(dref.Comments) > 0 {
-			offset += int(dref.Original.Pos() - dref.Comments[0].Pos())
+            if dref.Original.Pos() > dref.Comments[0].Pos() {
+                offset += int(dref.Original.Pos() - dref.Comments[0].Pos())
+            }
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
 
@@ -138,12 +142,14 @@ func (a *aggregator) aggregateDeclRef(dref *DeclRef) ast.Decl {
 	if dref.Replacement != nil {
 		offset := int(-dref.Replacement.Pos()) + a.base
 		if len(dref.Comments) > 0 {
-			offset += int(dref.Replacement.Pos() - dref.Comments[0].Pos())
+            if dref.Replacement.Pos() > dref.Comments[0].Pos() {
+                offset += int(dref.Replacement.Pos() - dref.Comments[0].Pos())
+            }
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
 		decl := mirror.Decl(dref.Replacement, offset, false)
 		base := decl.End()
-		if len(dref.Comments) > 0 {
+		if len(dref.Comments) > 0 && dref.Comments[len(dref.Comments)-1].End() > dref.Replacement.End() {
 			base += (dref.Comments[len(dref.Comments)-1].End() - dref.Replacement.End())
 		}
 		a.setBase(base)
@@ -154,7 +160,9 @@ func (a *aggregator) aggregateDeclRef(dref *DeclRef) ast.Decl {
 		offset := int(-dref.Original.Pos()) + a.base
 		fmt.Println("**FuncDecl***", "@offset", offset, "@base", a.base)
 		if len(dref.Comments) > 0 {
-			offset += int(dref.Original.Pos() - dref.Comments[0].Pos())
+            if dref.Original.Pos() > dref.Comments[0].Pos() {
+                offset += int(dref.Original.Pos() - dref.Comments[0].Pos())
+            }
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
 		decl := mirror.Decl(dref.Original, offset, false)
@@ -171,15 +179,19 @@ func (a *aggregator) aggregateSpecRef(sref *SpecRef) ast.Spec {
 		rpos := sref.Replacement.Pos()
 		offset := int(-rpos) + a.base
 		if len(sref.Comments) > 0 {
-			offset += int(sref.Replacement.Pos() - sref.Comments[0].Pos())
+            if sref.Replacement.Pos() > sref.Comments[0].Pos() {
+                offset += int(sref.Replacement.Pos() - sref.Comments[0].Pos())
+            }
 			// a.comments = append(a.comments, moveComments(sref.Comments, offset)...)
 		}
 
 		spec := mirror.Spec(sref.Replacement, offset, false)
 		base := spec.End()
-		// if len(sref.Comments) > 0 {
-		// 	base += (sref.Comments[len(sref.Comments)-1].End() - sref.Replacement.End())
-		// }
+		if len(sref.Comments) > 0 {
+            if sref.Comments[len(sref.Comments)-1].End() > sref.Replacement.End()  {
+                base += (sref.Comments[len(sref.Comments)-1].End() - sref.Replacement.End())
+            }
+		}
 		a.setBase(base)
 		return spec
 	}

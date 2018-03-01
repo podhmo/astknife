@@ -12,16 +12,6 @@ import (
 )
 
 func TestReplace(t *testing.T) {
-	// // S : 0
-	// type S struct {
-	// 	// Name :
-	// 	Name string // name
-	// 	// Age :
-	// 	Age string // age
-	// 	// Nickname :
-	// 	Nickname string // nickname
-	// }
-
 	code0 := `
 	package p
 
@@ -31,6 +21,16 @@ func TestReplace(t *testing.T) {
 		return 10
 	}
 
+
+	// S : 0
+	type S struct {
+		// Name :
+		Name string // name
+		// Age :
+		Age string // age
+		// Nickname :
+		Nickname string // nickname
+	}
 
 // G : 0
 func G() int {
@@ -67,6 +67,16 @@ package p
 
 // hmm
 
+	// S : 2
+	type S struct {
+		// Name :
+		Name string // name
+		// Age :
+		Age string // age
+		// Nickname :
+		Nickname string // nickname
+	}
+
 // G : 2
 func G() int {
 	// this is g2's comment
@@ -82,20 +92,25 @@ func G() int {
 	}
 
 	candidates := []C{
-		// {
-		// 	msg:  "replace f0.F to f0.F",
-		// 	code: code0,
-		// 	name: "F",
-		// },
-		// {
-		// 	msg:  "replace f0.F to f1.F",
-		// 	code: code1,
-		// 	name: "F",
-		// },
+		{
+			msg:  "replace f0.F to f0.F",
+			code: code0,
+			name: "F",
+		},
+		{
+			msg:  "replace f0.F to f1.F",
+			code: code1,
+			name: "F",
+		},
 		{
 			msg:  "replace f0.G to f1.G",
 			code: code2,
 			name: "G",
+		},
+		{
+			msg:  "replace f0.S to f1.S",
+			code: code2,
+			name: "S",
 		},
 	}
 	_ = code1
