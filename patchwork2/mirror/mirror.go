@@ -470,6 +470,39 @@ func Expr(expr ast.Expr, offset int, ignoreComment bool) ast.Expr {
 			Colon: token.Pos(int(x.Colon) + offset),
 			Value: Expr(x.Value, offset, ignoreComment),
 		}
+	case *ast.ArrayType:
+		return &ast.ArrayType{
+			Lbrack: token.Pos(int(x.Lbrack) + offset),
+			Len:    Expr(x.Len, offset, ignoreComment),
+			Elt:    Expr(x.Elt, offset, ignoreComment),
+		}
+	case *ast.StructType:
+		return &ast.StructType{
+			Struct:     token.Pos(int(x.Struct) + offset),
+			Fields:     FieldList(x.Fields, offset, ignoreComment),
+			Incomplete: x.Incomplete,
+		}
+	case *ast.FuncType:
+		return FuncType(x, offset, ignoreComment)
+	case *ast.InterfaceType:
+		return &ast.InterfaceType{
+			Interface:  token.Pos(int(x.Interface) + offset),
+			Methods:    FieldList(x.Methods, offset, ignoreComment),
+			Incomplete: x.Incomplete,
+		}
+	case *ast.MapType:
+		return &ast.MapType{
+			Map:   token.Pos(int(x.Map) + offset),
+			Key:   Expr(x.Key, offset, ignoreComment),
+			Value: Expr(x.Value, offset, ignoreComment),
+		}
+	case *ast.ChanType:
+		return &ast.ChanType{
+			Begin: token.Pos(int(x.Begin) + offset),
+			Arrow: token.Pos(int(x.Arrow) + offset),
+			Dir:   x.Dir,
+			Value: Expr(x.Value, offset, ignoreComment),
+		}
 	default:
 		panic(fmt.Sprintf("invalid expr %q", x))
 	}

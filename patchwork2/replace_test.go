@@ -3,18 +3,23 @@ package patchwork2
 import (
 	"bytes"
 	"fmt"
+	"go/ast"
 	"go/parser"
 	"go/token"
 	"testing"
 
 	"github.com/podhmo/printer"
-
-	"github.com/podhmo/astknife/patchwork2/lookup"
 )
 
 func TestReplace(t *testing.T) {
 	code0 := `
 package p
+
+// S : 0
+type S struct {
+	// Name :
+	Name string // name
+}
 
 // F : 0
 func F() int {
@@ -90,14 +95,28 @@ func G() int {
 				t.Fatal(err)
 			}
 			ref := NewRef(f0, f1)
-			if err := Replace(ref, lookup.Lookup(c.name, f0), lookup.Lookup(c.name, f1)); err != nil {
-				t.Fatal(err)
-			}
+			// if err := Replace(ref, lookup.Lookup(c.name, f0), lookup.Lookup(c.name, f1)); err != nil {
+			// 	t.Fatal(err)
+			// }
+
 			var b bytes.Buffer
 			got := ref.Files[0].ToFile(fset, "newf0.go")
 			printer.Fprint(&b, fset, got)
 			fmt.Println(f0.Pos(), f0.End(), "actual", f0.End()-f0.Pos(), fset.File(f0.Pos()).Base(), "expected", fset.File(f0.Pos()).Size())
 			fmt.Println(got.Pos(), got.End(), "actual", got.End()-got.Pos(), fset.File(got.Pos()).Base(), "expected", fset.File(got.Pos()).Size())
+			ast.Inspect(f0, func(node ast.Node) bool {
+				if node != nil {
+					fmt.Printf("%T %v-%v s %v @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-f0.Pos(), node.End()-f0.Pos())
+				}
+				return true
+			})
+			fmt.Println("----------------------------------------")
+			ast.Inspect(got, func(node ast.Node) bool {
+				if node != nil {
+					fmt.Printf("%T %v-%v s %v @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-got.Pos(), node.End()-got.Pos())
+				}
+				return true
+			})
 			// ast.Fprint(os.Stdout, fset, got, nil)
 			t.Log(b.String())
 		})

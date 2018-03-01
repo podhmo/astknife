@@ -1,6 +1,7 @@
 package patchwork2
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 
@@ -24,6 +25,7 @@ type aggregator struct {
 }
 
 func (a *aggregator) setBase(pos token.Pos) {
+	fmt.Println("!! update base", a.base, "->", int(pos))
 	a.base = int(pos)
 }
 func moveComments(xs []*ast.CommentGroup, offset int) []*ast.CommentGroup {
@@ -38,12 +40,12 @@ func aggregate(fset *token.FileSet, fref *FileRef, filename string, size int) *a
 	tokenf := fset.AddFile(filename, -1, size)
 	base := tokenf.Base()
 	f := &ast.File{
-		Name:    mirror.Ident(fref.File.Name, base, false),
+		Name:    mirror.Ident(fref.File.Name, base, false), // xxx
 		Scope:   ast.NewScope(nil),
 		Package: token.Pos(base),
 	}
 
-	a := &aggregator{base: int(f.Name.End() + 1), f: f, fref: fref, tokenf: tokenf}
+	a := &aggregator{base: int(f.Name.End()), f: f, fref: fref, tokenf: tokenf}
 	for _, dref := range fref.Decls {
 		if len(dref.Specs) == 0 {
 			decl := a.aggregateDeclRef(dref)
@@ -60,15 +62,9 @@ func aggregate(fset *token.FileSet, fref *FileRef, filename string, size int) *a
 // aggregateGencDeclRef
 func (a *aggregator) aggregateGencDeclRef(dref *DeclRef) ast.Decl {
 	if dref.Replacement != nil {
-		rpos := dref.Replacement.Pos()
-		offset := int(-rpos) + a.base
+		offset := int(-dref.Replacement.Pos()) + a.base
 		if len(dref.Comments) > 0 {
-			for _, c := range dref.Comments {
-				pos := c.Pos()
-				if pos < rpos {
-					offset += int(rpos - pos)
-				}
-			}
+			offset += int(dref.Replacement.Pos() - dref.Comments[0].Pos())
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
 
@@ -86,12 +82,16 @@ func (a *aggregator) aggregateGencDeclRef(dref *DeclRef) ast.Decl {
 		for i, sref := range dref.Specs {
 			specs[i] = a.aggregateSpecRef(sref)
 		}
+		// xxxx :
+		// if len(dref.Comments) > 0 {
+		// 	base += (dref.Comments[len(dref.Comments)-1].End() - dref.Replacement.End())
+		// }
 		new.Specs = specs
 		return &new
 	}
 
 	if dref.Original != nil {
-		offset := int(-dref.File.Pos()) + a.base
+		offset := int(-dref.File.Name.End()) + a.base
 		if len(dref.Comments) > 0 {
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
@@ -120,24 +120,22 @@ func (a *aggregator) aggregateGencDeclRef(dref *DeclRef) ast.Decl {
 // aggregateDeclRef
 func (a *aggregator) aggregateDeclRef(dref *DeclRef) ast.Decl {
 	if dref.Replacement != nil {
-		rpos := dref.Replacement.Pos()
-		offset := int(-rpos) + a.base
+		offset := int(-dref.Replacement.Pos()) + a.base
 		if len(dref.Comments) > 0 {
-			for _, c := range dref.Comments {
-				pos := c.Pos()
-				if pos < rpos {
-					offset += int(rpos - pos)
-				}
-			}
+			offset += int(dref.Replacement.Pos() - dref.Comments[0].Pos())
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
 		decl := mirror.Decl(dref.Replacement, offset, false)
-		a.setBase(decl.End())
+		base := decl.End()
+		if len(dref.Comments) > 0 {
+			base += (dref.Comments[len(dref.Comments)-1].End() - dref.Replacement.End())
+		}
+		a.setBase(base)
 		return decl
 	}
 
 	if dref.Original != nil {
-		offset := int(-dref.File.Pos()) + a.base
+		offset := int(-dref.File.Name.End()) + a.base
 		if len(dref.Comments) > 0 {
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
@@ -155,22 +153,21 @@ func (a *aggregator) aggregateSpecRef(sref *SpecRef) ast.Spec {
 		rpos := sref.Replacement.Pos()
 		offset := int(-rpos) + a.base
 		if len(sref.Comments) > 0 {
-			for _, c := range sref.Comments {
-				pos := c.Pos()
-				if pos < rpos {
-					offset += int(rpos - pos)
-				}
-			}
+			offset += int(sref.Replacement.Pos() - sref.Comments[0].Pos())
 			a.comments = append(a.comments, moveComments(sref.Comments, offset)...)
 		}
 
 		spec := mirror.Spec(sref.Replacement, offset, false)
-		a.setBase(spec.End())
+		base := spec.End()
+		if len(sref.Comments) > 0 {
+			base += (sref.Comments[len(sref.Comments)-1].End() - sref.Replacement.End())
+		}
+		a.setBase(base)
 		return spec
 	}
 
 	if sref.Original != nil {
-		offset := int(-sref.File.Pos()) + a.base
+		offset := int(-sref.File.Name.End()) + a.base
 		if len(sref.Comments) > 0 {
 			a.comments = append(a.comments, moveComments(sref.Comments, offset)...)
 		}
@@ -197,6 +194,7 @@ func trim(fset *token.FileSet, fref *FileRef) int {
 
 	t := &trimmer{fset: fset, fref: fref, cmapMap: cmapMap, cmap: cmap}
 	for _, dref := range fref.Decls {
+		fmt.Println("@SIZE@", size)
 		size += t.trimDeclRef(dref)
 	}
 	fref.Comments = cmap.Comments()
@@ -206,7 +204,8 @@ func trim(fset *token.FileSet, fref *FileRef) int {
 			size += int(cend - fref.File.End())
 		}
 	}
-	return size
+	fmt.Println("@SIZE@@@", size)
+	return size + 2
 }
 
 func (t *trimmer) getCmap(f *ast.File) ast.CommentMap {
@@ -224,31 +223,26 @@ func (t *trimmer) trimDeclRef(dref *DeclRef) int {
 	if dref.Replacement != nil {
 		delta += int(dref.Replacement.End() - dref.Replacement.Pos())
 		added := t.getCmap(dref.File).Filter(dref.Replacement)
-		for _, cs := range added {
-			for _, c := range cs {
-				delta += int(c.End() - c.Pos())
-			}
-		}
 		dref.Comments = added.Comments()
+
+		if len(dref.Comments) > 0 {
+			delta += int(dref.Replacement.Pos() - dref.Comments[0].Pos())
+			delta += int(dref.Comments[len(dref.Comments)-1].End() - dref.Replacement.End())
+		}
 
 		if dref.Original != nil {
 			removed := t.cmap.Filter(dref.Original)
 			for k := range removed {
 				delete(t.cmap, k)
 			}
-			for _, cs := range removed {
-				for _, c := range cs {
-					delta -= int(c.End() - c.Pos())
-				}
+			removedComments := removed.Comments()
+			if len(removedComments) > 0 {
+				delta -= int(dref.Replacement.Pos() - removedComments[0].Pos())
+				delta -= int(removedComments[len(removedComments)-1].End() - dref.Replacement.End())
 			}
 		}
 	} else if dref.Original != nil {
 		added := t.getCmap(dref.File).Filter(dref.Original)
-		for _, cs := range added {
-			for _, c := range cs {
-				delta += int(c.End() - c.Pos())
-			}
-		}
 		dref.Comments = added.Comments()
 	}
 	for _, sref := range dref.Specs {
@@ -263,31 +257,25 @@ func (t *trimmer) trimSpecRef(sref *SpecRef) int {
 	if sref.Replacement != nil {
 		delta += int(sref.Replacement.End() - sref.Replacement.Pos())
 		added := t.getCmap(sref.File).Filter(sref.Replacement)
-		for _, cs := range added {
-			for _, c := range cs {
-				delta += int(c.End() - c.Pos())
-			}
-		}
 		sref.Comments = added.Comments()
+		if len(sref.Comments) > 0 {
+			delta += int(sref.Replacement.Pos() - sref.Comments[0].Pos())
+			delta += int(sref.Comments[len(sref.Comments)-1].End() - sref.Replacement.End())
+		}
 
 		if sref.Original != nil {
 			removed := t.cmap.Filter(sref.Original)
 			for k := range removed {
 				delete(t.cmap, k)
 			}
-			for _, cs := range removed {
-				for _, c := range cs {
-					delta -= int(c.End() - c.Pos())
-				}
+			removedComments := removed.Comments()
+			if len(removedComments) > 0 {
+				delta -= int(sref.Replacement.Pos() - removedComments[0].Pos())
+				delta -= int(removedComments[len(removedComments)-1].End() - sref.Replacement.End())
 			}
 		}
 	} else if sref.Original != nil {
 		added := t.getCmap(sref.File).Filter(sref.Original)
-		for _, cs := range added {
-			for _, c := range cs {
-				delta += int(c.End() - c.Pos())
-			}
-		}
 		sref.Comments = added.Comments()
 	}
 	return delta
