@@ -53,7 +53,7 @@ func aggregate(fset *token.FileSet, fref *FileRef, filename string, size int) *a
 			f.Decls = append(f.Decls, decl)
 		}
 	}
-	f.Comments = append(a.comments, moveComments(fref.Comments, a.base)...)
+	f.Comments = a.comments
 	return f
 }
 

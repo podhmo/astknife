@@ -2,10 +2,12 @@ package patchwork2
 
 import (
 	"bytes"
+	"fmt"
 	"go/parser"
-	"go/printer"
 	"go/token"
 	"testing"
+
+	"github.com/podhmo/printer"
 
 	"github.com/podhmo/astknife/patchwork2/lookup"
 )
@@ -18,12 +20,6 @@ package p
 func F() int {
 	// this is f0's comment
 	return 10
-}
-
-// G : 0
-func G() int {
-	// this is g0's comment
-	return 20
 }
 `
 	code1 := `
@@ -63,23 +59,24 @@ func G() int {
 	}
 
 	candidates := []C{
-		{
-			msg:  "replace f0.F to f0.F",
-			code: code0,
-			name: "F",
-		},
+		// {
+		// 	msg:  "replace f0.F to f0.F",
+		// 	code: code0,
+		// 	name: "F",
+		// },
 		{
 			msg:  "replace f0.F to f1.F",
 			code: code1,
 			name: "F",
 		},
-		{
-			msg:  "replace f0.G to f1.G",
-			code: code2,
-			name: "G",
-		},
+		// {
+		// 	msg:  "replace f0.G to f1.G",
+		// 	code: code2,
+		// 	name: "G",
+		// },
 	}
-
+	_ = code1
+	_ = code2
 	for _, c := range candidates {
 		c := c
 		t.Run(c.msg, func(t *testing.T) {
@@ -99,9 +96,9 @@ func G() int {
 			var b bytes.Buffer
 			got := ref.Files[0].ToFile(fset, "newf0.go")
 			printer.Fprint(&b, fset, got)
+			fmt.Println(f0.Pos(), f0.End(), "actual", f0.End()-f0.Pos(), fset.File(f0.Pos()).Base(), "expected", fset.File(f0.Pos()).Size())
+			fmt.Println(got.Pos(), got.End(), "actual", got.End()-got.Pos(), fset.File(got.Pos()).Base(), "expected", fset.File(got.Pos()).Size())
 			// ast.Fprint(os.Stdout, fset, got, nil)
-			// fmt.Println("-")
-			// ast.Fprint(os.Stdout, fset, f0, nil)
 			t.Log(b.String())
 		})
 	}
