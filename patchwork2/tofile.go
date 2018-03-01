@@ -222,6 +222,7 @@ func (t *trimmer) getCmap(f *ast.File) ast.CommentMap {
 func (t *trimmer) trimDeclRef(dref *DeclRef) int {
 	delta := 0
 	if dref.Replacement != nil {
+		delta += int(dref.Replacement.End() - dref.Replacement.Pos())
 		added := t.getCmap(dref.File).Filter(dref.Replacement)
 		for _, cs := range added {
 			for _, c := range cs {
@@ -243,6 +244,11 @@ func (t *trimmer) trimDeclRef(dref *DeclRef) int {
 		}
 	} else if dref.Original != nil {
 		added := t.getCmap(dref.File).Filter(dref.Original)
+		for _, cs := range added {
+			for _, c := range cs {
+				delta += int(c.End() - c.Pos())
+			}
+		}
 		dref.Comments = added.Comments()
 	}
 	for _, sref := range dref.Specs {
@@ -255,6 +261,7 @@ func (t *trimmer) trimDeclRef(dref *DeclRef) int {
 func (t *trimmer) trimSpecRef(sref *SpecRef) int {
 	delta := 0
 	if sref.Replacement != nil {
+		delta += int(sref.Replacement.End() - sref.Replacement.Pos())
 		added := t.getCmap(sref.File).Filter(sref.Replacement)
 		for _, cs := range added {
 			for _, c := range cs {
@@ -276,6 +283,11 @@ func (t *trimmer) trimSpecRef(sref *SpecRef) int {
 		}
 	} else if sref.Original != nil {
 		added := t.getCmap(sref.File).Filter(sref.Original)
+		for _, cs := range added {
+			for _, c := range cs {
+				delta += int(c.End() - c.Pos())
+			}
+		}
 		sref.Comments = added.Comments()
 	}
 	return delta
