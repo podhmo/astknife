@@ -87,12 +87,21 @@ func (a *aggregator) aggregateGencDeclRef(dref *DeclRef) ast.Decl {
 		// 	base += (dref.Comments[len(dref.Comments)-1].End() - dref.Replacement.End())
 		// }
 		new.Specs = specs
+		if new.Lparen != token.NoPos {
+			new.Lparen = token.Pos(int(new.Lparen) + offset)
+		}
+		if new.Rparen != token.NoPos {
+			new.Rparen = token.Pos(int(new.Rparen) + offset)
+		}
+		new.Doc = mirror.CommentGroup(new.Doc, offset, false)
 		return &new
 	}
 
 	if dref.Original != nil {
-		offset := int(-dref.File.Name.End()) + a.base
+		offset := int(-dref.Original.Pos()) + a.base
+		fmt.Println("**GenDecl***", "@offset", offset, "@base", a.base)
 		if len(dref.Comments) > 0 {
+			offset += int(dref.Original.Pos() - dref.Comments[0].Pos())
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
 
@@ -111,6 +120,13 @@ func (a *aggregator) aggregateGencDeclRef(dref *DeclRef) ast.Decl {
 			specs[i] = a.aggregateSpecRef(sref)
 		}
 		new.Specs = specs
+		if new.Lparen != token.NoPos {
+			new.Lparen = token.Pos(int(new.Lparen) + offset)
+		}
+		if new.Rparen != token.NoPos {
+			new.Rparen = token.Pos(int(new.Rparen) + offset)
+		}
+		new.Doc = mirror.CommentGroup(new.Doc, offset, false)
 		return &new
 	}
 
@@ -135,8 +151,10 @@ func (a *aggregator) aggregateDeclRef(dref *DeclRef) ast.Decl {
 	}
 
 	if dref.Original != nil {
-		offset := int(-dref.File.Name.End()) + a.base
+		offset := int(-dref.Original.Pos()) + a.base
+		fmt.Println("**FuncDecl***", "@offset", offset, "@base", a.base)
 		if len(dref.Comments) > 0 {
+			offset += int(dref.Original.Pos() - dref.Comments[0].Pos())
 			a.comments = append(a.comments, moveComments(dref.Comments, offset)...)
 		}
 		decl := mirror.Decl(dref.Original, offset, false)
@@ -154,23 +172,24 @@ func (a *aggregator) aggregateSpecRef(sref *SpecRef) ast.Spec {
 		offset := int(-rpos) + a.base
 		if len(sref.Comments) > 0 {
 			offset += int(sref.Replacement.Pos() - sref.Comments[0].Pos())
-			a.comments = append(a.comments, moveComments(sref.Comments, offset)...)
+			// a.comments = append(a.comments, moveComments(sref.Comments, offset)...)
 		}
 
 		spec := mirror.Spec(sref.Replacement, offset, false)
 		base := spec.End()
-		if len(sref.Comments) > 0 {
-			base += (sref.Comments[len(sref.Comments)-1].End() - sref.Replacement.End())
-		}
+		// if len(sref.Comments) > 0 {
+		// 	base += (sref.Comments[len(sref.Comments)-1].End() - sref.Replacement.End())
+		// }
 		a.setBase(base)
 		return spec
 	}
 
 	if sref.Original != nil {
-		offset := int(-sref.File.Name.End()) + a.base
-		if len(sref.Comments) > 0 {
-			a.comments = append(a.comments, moveComments(sref.Comments, offset)...)
-		}
+		offset := int(-sref.Original.Pos()) + a.base
+		fmt.Println("**SpeC***", "@offset", offset, "@base", a.base)
+		// if len(sref.Comments) > 0 {
+		// 	a.comments = append(a.comments, moveComments(sref.Comments, offset)...)
+		// }
 		spec := mirror.Spec(sref.Original, offset, false)
 		a.setBase(spec.End())
 		return spec

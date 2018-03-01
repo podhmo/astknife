@@ -19,6 +19,10 @@ package p
 type S struct {
 	// Name :
 	Name string // name
+	// Age :
+	Age string // age
+	// Nickname :
+	Nickname string // nickname
 }
 
 // F : 0
