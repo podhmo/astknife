@@ -6,6 +6,29 @@ import (
 	"go/token"
 )
 
+// File :
+func File(f *ast.File, offset int, ignoreComment bool) *ast.File {
+	return &ast.File{
+		Doc:        CommentGroup(f.Doc, offset, ignoreComment),
+		Package:    token.Pos(int(f.Package) + offset),
+		Name:       Ident(f.Name, offset, ignoreComment),
+		Decls:      Decls(f.Decls, offset, ignoreComment),
+		Scope:      ast.NewScope(nil), // todo:
+		Imports:    ImportSpecs(f.Imports, offset, ignoreComment),
+		Unresolved: Idents(f.Unresolved, offset, ignoreComment),
+		Comments:   CommentGroups(f.Comments, offset, ignoreComment),
+	}
+}
+
+// Decls :
+func Decls(xs []ast.Decl, offset int, ignoreComment bool) []ast.Decl {
+	ys := make([]ast.Decl, len(xs))
+	for i := range xs {
+		ys[i] = Decl(xs[i], offset, ignoreComment)
+	}
+	return ys
+}
+
 // Decl :
 func Decl(decl ast.Decl, offset int, ignoreComment bool) ast.Decl {
 	if decl == nil {
@@ -41,6 +64,24 @@ func Decl(decl ast.Decl, offset int, ignoreComment bool) ast.Decl {
 	default:
 		panic(fmt.Sprintf("invalid decl %q", x))
 	}
+}
+
+// Specs :
+func Specs(xs []ast.Spec, offset int, ignoreComment bool) []ast.Spec {
+	ys := make([]ast.Spec, len(xs))
+	for i := range xs {
+		ys[i] = Spec(xs[i], offset, ignoreComment)
+	}
+	return ys
+}
+
+// ImportSpecs :
+func ImportSpecs(xs []*ast.ImportSpec, offset int, ignoreComment bool) []*ast.ImportSpec {
+	ys := make([]*ast.ImportSpec, len(xs))
+	for i := range xs {
+		ys[i] = Spec(xs[i], offset, ignoreComment).(*ast.ImportSpec)
+	}
+	return ys
 }
 
 // Spec :
@@ -457,6 +498,15 @@ func BlockStmt(x *ast.BlockStmt, offset int, ignoreComment bool) *ast.BlockStmt 
 		List:   Stmts(x.List, offset, ignoreComment),
 		Rbrace: token.Pos(int(x.Rbrace) + offset),
 	}
+}
+
+// CommentGroups :
+func CommentGroups(xs []*ast.CommentGroup, offset int, ignoreComment bool) []*ast.CommentGroup {
+	ys := make([]*ast.CommentGroup, len(xs))
+	for i := range xs {
+		ys[i] = CommentGroup(xs[i], offset, ignoreComment)
+	}
+	return ys
 }
 
 // CommentGroup :
