@@ -52,6 +52,7 @@ func aggregate(fset *token.FileSet, fref *FileRef, filename string, size int) *a
 		}
 	}
 	f.Comments = append(a.comments, moveComments(fref.Comments, a.base)...)
+	//sort.Slice(f.Comments, func(i, j int) bool { return f.Comments[i].Pos() < f.Comments[j].Pos() })
 	return f
 }
 
@@ -173,7 +174,7 @@ func (a *aggregator) aggregateSpecRef(sref *SpecRef) ast.Spec {
 		if len(sref.Comments) > 0 {
 			a.comments = append(a.comments, moveComments(sref.Comments, offset)...)
 		}
-		spec := mirror.Spec(sref.Replacement, offset, false)
+		spec := mirror.Spec(sref.Original, offset, false)
 		a.setBase(spec.End())
 		return spec
 	}

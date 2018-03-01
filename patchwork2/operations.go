@@ -16,6 +16,9 @@ func Replace(ref *Ref, pat *lookup.Result, rep *lookup.Result) error {
 	if pat.Object.Kind != rep.Object.Kind {
 		return &Unsupported{pat, fmt.Sprintf("conflict kind %s != %s", pat.Object.Kind, rep.Object.Kind)}
 	}
+	if rep == nil {
+		return errNotfound
+	}
 
 	for _, f := range ref.Files {
 		err := replaceFileRefFromLookup(f, pat, rep)
@@ -79,6 +82,9 @@ func replaceDeclRefFromLookup(dref *DeclRef, pat *lookup.Result, rep *lookup.Res
 
 // Append :
 func Append(fref *FileRef, r *lookup.Result) error {
+	if r == nil {
+		return errNotfound
+	}
 	declref, err := newDeclRefFromLookup(r)
 	if err != nil {
 		return err

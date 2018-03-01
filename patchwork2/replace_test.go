@@ -63,11 +63,11 @@ func G() int {
 	}
 
 	candidates := []C{
-		// {
-		// 	msg:  "replace f0.F to f0.F",
-		// 	code: code0,
-		// 	name: "F",
-		// },
+		{
+			msg:  "replace f0.F to f0.F",
+			code: code0,
+			name: "F",
+		},
 		{
 			msg:  "replace f0.F to f1.F",
 			code: code1,
@@ -104,6 +104,5 @@ func G() int {
 			// ast.Fprint(os.Stdout, fset, f0, nil)
 			t.Log(b.String())
 		})
-		break
 	}
 }

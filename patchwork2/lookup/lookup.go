@@ -25,7 +25,7 @@ func Toplevel(name string, files ...*ast.File) *Result {
 				Type:   TypeToplevel,
 				File:   f,
 			}
-			if ob.Type == ast.Fun {
+			if ob.Kind == ast.Fun {
 				r.FuncDecl = ob.Decl.(*ast.FuncDecl)
 			}
 			return r
