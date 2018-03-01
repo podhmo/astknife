@@ -1,11 +1,9 @@
 package patchwork2
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 
-	"github.com/podhmo/astknife/action/comment"
 	"github.com/podhmo/astknife/patchwork2/mirror"
 )
 
@@ -225,29 +223,11 @@ func (t *trimmer) trimDeclRef(dref *DeclRef) int {
 	delta := 0
 	if dref.Replacement != nil {
 		added := t.getCmap(dref.File).Filter(dref.Replacement)
-		fmt.Println("!!", len(added), added.String())
 		for _, cs := range added {
 			for _, c := range cs {
 				delta += int(c.End() - c.Pos())
 			}
 		}
-		fmt.Println(comment.CollectFromNode(dref.File.Comments, dref.Replacement), dref.Replacement.Pos(), "***")
-		ast.Inspect(dref.Replacement, func(n ast.Node) bool {
-			if n != nil {
-				if n.Pos() == 38 {
-					fmt.Printf("%d: %T %+v\n", n.Pos(), n, n)
-				}
-			}
-			return true
-		})
-
-		for n, cs := range t.getCmap(dref.File) {
-			fmt.Printf("kk %d: %T %+v\n", n.Pos(), n, n)
-			for _, c := range cs {
-				fmt.Println(fmt.Sprintf("%q", c.Text()), c.Pos(), c.End(), "--", dref.Replacement.Pos())
-			}
-		}
-		fmt.Println(len(added.Comments()))
 		dref.Comments = added.Comments()
 
 		if dref.Original != nil {
@@ -261,6 +241,9 @@ func (t *trimmer) trimDeclRef(dref *DeclRef) int {
 				}
 			}
 		}
+	} else if dref.Original != nil {
+		added := t.getCmap(dref.File).Filter(dref.Original)
+		dref.Comments = added.Comments()
 	}
 	for _, sref := range dref.Specs {
 		delta += t.trimSpecRef(sref)
@@ -291,6 +274,9 @@ func (t *trimmer) trimSpecRef(sref *SpecRef) int {
 				}
 			}
 		}
+	} else if sref.Original != nil {
+		added := t.getCmap(sref.File).Filter(sref.Original)
+		sref.Comments = added.Comments()
 	}
 	return delta
 }
