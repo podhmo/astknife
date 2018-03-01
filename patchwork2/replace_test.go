@@ -8,29 +8,30 @@ import (
 	"go/token"
 	"testing"
 
+	"github.com/podhmo/astknife/patchwork2/lookup"
 	"github.com/podhmo/printer"
 )
 
 func TestReplace(t *testing.T) {
 	code0 := `
-package p
+	package p
 
-// S : 0
-type S struct {
-	// Name :
-	Name string // name
-	// Age :
-	Age string // age
-	// Nickname :
-	Nickname string // nickname
-}
+	// S : 0
+	type S struct {
+		// Name :
+		Name string // name
+		// Age :
+		Age string // age
+		// Nickname :
+		Nickname string // nickname
+	}
 
-// F : 0
-func F() int {
-	// this is f0's comment
-	return 10
-}
-`
+	// F : 0
+	func F() int {
+		// this is f0's comment
+		return 10
+	}
+	`
 	code1 := `
 package p
 
@@ -99,9 +100,9 @@ func G() int {
 				t.Fatal(err)
 			}
 			ref := NewRef(f0, f1)
-			// if err := Replace(ref, lookup.Lookup(c.name, f0), lookup.Lookup(c.name, f1)); err != nil {
-			// 	t.Fatal(err)
-			// }
+			if err := Replace(ref, lookup.Lookup(c.name, f0), lookup.Lookup(c.name, f1)); err != nil {
+				t.Fatal(err)
+			}
 
 			var b bytes.Buffer
 			got := ref.Files[0].ToFile(fset, "newf0.go")

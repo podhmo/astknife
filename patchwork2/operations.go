@@ -13,11 +13,15 @@ var errNotfound = errors.New("not found")
 
 // Replace :
 func Replace(ref *Ref, pat *lookup.Result, rep *lookup.Result) error {
-	if pat.Object.Kind != rep.Object.Kind {
-		return &Unsupported{pat, fmt.Sprintf("conflict kind %s != %s", pat.Object.Kind, rep.Object.Kind)}
-	}
 	if rep == nil {
 		return errNotfound
+	}
+	if pat == nil {
+		return errNotfound
+	}
+
+	if pat.Object.Kind != rep.Object.Kind {
+		return &Unsupported{pat, fmt.Sprintf("conflict kind %s != %s", pat.Object.Kind, rep.Object.Kind)}
 	}
 
 	for _, f := range ref.Files {
