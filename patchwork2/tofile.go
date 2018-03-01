@@ -250,6 +250,7 @@ func (t *trimmer) trimDeclRef(dref *DeclRef) int {
 		}
 
 		if dref.Original != nil {
+			delta -= int(dref.Original.End() - dref.Original.Pos())
 			removed := t.cmap.Filter(dref.Original)
 			for k := range removed {
 				delete(t.cmap, k)
@@ -283,6 +284,7 @@ func (t *trimmer) trimSpecRef(sref *SpecRef) int {
 		}
 
 		if sref.Original != nil {
+			delta -= int(sref.Original.End() - sref.Original.Pos())
 			removed := t.cmap.Filter(sref.Original)
 			for k := range removed {
 				delete(t.cmap, k)

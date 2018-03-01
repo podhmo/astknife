@@ -3,7 +3,6 @@ package patchwork2
 import (
 	"bytes"
 	"fmt"
-	"go/ast"
 	"go/parser"
 	"go/token"
 	"testing"
@@ -13,24 +12,38 @@ import (
 )
 
 func TestReplace(t *testing.T) {
+	// // S : 0
+	// type S struct {
+	// 	// Name :
+	// 	Name string // name
+	// 	// Age :
+	// 	Age string // age
+	// 	// Nickname :
+	// 	Nickname string // nickname
+	// }
+
 	code0 := `
 	package p
-
-	// S : 0
-	type S struct {
-		// Name :
-		Name string // name
-		// Age :
-		Age string // age
-		// Nickname :
-		Nickname string // nickname
-	}
 
 	// F : 0
 	func F() int {
 		// this is f0's comment
 		return 10
 	}
+
+
+// G : 0
+func G() int {
+	// this is g0's comment
+	return 10 + 10
+}
+
+// H : 0
+func H() int {
+	// this is h0's comment
+	return 10 + 10
+}
+
 	`
 	code1 := `
 package p
@@ -74,16 +87,16 @@ func G() int {
 		// 	code: code0,
 		// 	name: "F",
 		// },
-		{
-			msg:  "replace f0.F to f1.F",
-			code: code1,
-			name: "F",
-		},
 		// {
-		// 	msg:  "replace f0.G to f1.G",
-		// 	code: code2,
-		// 	name: "G",
+		// 	msg:  "replace f0.F to f1.F",
+		// 	code: code1,
+		// 	name: "F",
 		// },
+		{
+			msg:  "replace f0.G to f1.G",
+			code: code2,
+			name: "G",
+		},
 	}
 	_ = code1
 	_ = code2
@@ -109,19 +122,19 @@ func G() int {
 			printer.Fprint(&b, fset, got)
 			fmt.Println(f0.Pos(), f0.End(), "actual", f0.End()-f0.Pos(), fset.File(f0.Pos()).Base(), "expected", fset.File(f0.Pos()).Size())
 			fmt.Println(got.Pos(), got.End(), "actual", got.End()-got.Pos(), fset.File(got.Pos()).Base(), "expected", fset.File(got.Pos()).Size())
-			ast.Inspect(f0, func(node ast.Node) bool {
-				if node != nil {
-					fmt.Printf("%T %v-%v s %v @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-f0.Pos(), node.End()-f0.Pos())
-				}
-				return true
-			})
-			fmt.Println("----------------------------------------")
-			ast.Inspect(got, func(node ast.Node) bool {
-				if node != nil {
-					fmt.Printf("%T %v-%v s %v @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-got.Pos(), node.End()-got.Pos())
-				}
-				return true
-			})
+			// ast.Inspect(f0, func(node ast.Node) bool {
+			// 	if node != nil {
+			// 		fmt.Printf("%T %v-%v s %v @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-f0.Pos(), node.End()-f0.Pos())
+			// 	}
+			// 	return true
+			// })
+			// fmt.Println("----------------------------------------")
+			// ast.Inspect(got, func(node ast.Node) bool {
+			// 	if node != nil {
+			// 		fmt.Printf("%T %v-%v s %v @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-got.Pos(), node.End()-got.Pos())
+			// 	}
+			// 	return true
+			// })
 			// ast.Fprint(os.Stdout, fset, got, nil)
 			t.Log(b.String())
 		})
