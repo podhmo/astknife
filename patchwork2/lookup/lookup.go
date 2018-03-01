@@ -3,12 +3,10 @@ package lookup
 import (
 	"go/ast"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Lookup :
-func Lookup(name string, files ...*ast.File) (*Result, error) {
+func Lookup(name string, files ...*ast.File) *Result {
 	if strings.Contains(name, ".") {
 		obAndMethod := strings.SplitN(name, ".", 2)
 		return Method(obAndMethod[0], obAndMethod[1], files...)
@@ -17,7 +15,7 @@ func Lookup(name string, files ...*ast.File) (*Result, error) {
 }
 
 // Toplevel :
-func Toplevel(name string, files ...*ast.File) (*Result, error) {
+func Toplevel(name string, files ...*ast.File) *Result {
 	for _, f := range files {
 		ob := f.Scope.Lookup(name)
 		if ob != nil {
@@ -30,22 +28,17 @@ func Toplevel(name string, files ...*ast.File) (*Result, error) {
 			if ob.Type == ast.Fun {
 				r.FuncDecl = ob.Decl.(*ast.FuncDecl)
 			}
-			return r, nil
+			return r
 		}
 	}
-	return nil, errors.Wrap(ErrNotFound, "toplevel")
+	return nil
 }
 
-var (
-	// ErrNotFound :
-	ErrNotFound = errors.New("not found")
-)
-
 // Method :
-func Method(obname, name string, files ...*ast.File) (*Result, error) {
-	obr, err := Toplevel(obname, files...)
-	if err != nil {
-		return nil, errors.WithMessage(err, "method recv")
+func Method(obname, name string, files ...*ast.File) *Result {
+	obr := Toplevel(obname, files...)
+	if obr == nil {
+		return nil
 	}
 
 	ob := obr.Object
@@ -71,17 +64,17 @@ func Method(obname, name string, files ...*ast.File) (*Result, error) {
 					Object:   ob,
 					Type:     TypeMethod,
 					File:     f,
-				}, nil
+				}
 			}
 		}
 	}
-	return nil, errors.Wrap(ErrNotFound, "method func")
+	return nil
 }
 
 // AllMethods :
 func AllMethods(obname string, files ...*ast.File) []*Result {
-	rob, err := Toplevel(obname, files...)
-	if err != nil {
+	rob := Toplevel(obname, files...)
+	if rob == nil {
 		return nil
 	}
 
