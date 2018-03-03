@@ -103,16 +103,16 @@ func G() int {
 		// 	code: code1,
 		// 	name: "F",
 		// },
-		{
-			msg:  "replace f0.G to f1.G",
-			code: code2,
-			name: "G",
-		},
 		// {
-		// 	msg:  "replace f0.S to f1.S",
+		// 	msg:  "replace f0.G to f1.G",
 		// 	code: code2,
-		// 	name: "S",
+		// 	name: "G",
 		// },
+		{
+			msg:  "replace f0.S to f1.S",
+			code: code2,
+			name: "S",
+		},
 	}
 	_ = code1
 	_ = code2
@@ -136,38 +136,23 @@ func G() int {
 			var b bytes.Buffer
 			got := ToFile(p, "newf0.go")
 			printer.Fprint(&b, fset, got)
-			fmt.Println(f0.Pos(), f0.End(), "actual", f0.End()-f0.Pos(), fset.File(f0.Pos()).Base(), "expected", fset.File(f0.Pos()).Size())
-			fmt.Println(got.Pos(), got.End(), "actual", got.End()-got.Pos(), fset.File(got.Pos()).Base(), "expected", fset.File(got.Pos()).Size())
-
-			ast.Inspect(f0, func(node ast.Node) bool {
-				if node != nil {
-					if _, ok := node.(ast.Decl); ok {
-						fmt.Println("-")
-					}
-					if x, ok := node.(*ast.Ident); ok {
-						fmt.Printf("%T(%s) %v-%v *size=%v* @ %v-%v\n", x, x.Name, x.Pos(), x.End(), x.End()-x.Pos(), x.Pos()-f0.Pos(), x.End()-f0.Pos())
-					} else {
-						fmt.Printf("%T %v-%v *size=%v* @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-f0.Pos(), node.End()-f0.Pos())
-					}
-				}
-				return true
-			})
-			fmt.Println("----------------------------------------")
-			ast.Inspect(got, func(node ast.Node) bool {
-				if node != nil {
-					if _, ok := node.(ast.Decl); ok {
-						fmt.Println("-")
-					}
-					if x, ok := node.(*ast.Ident); ok {
-						fmt.Printf("%T(%s) %v-%v *size=%v* @ %v-%v\n", x, x.Name, x.Pos(), x.End(), x.End()-x.Pos(), x.Pos()-got.Pos(), x.End()-got.Pos())
-					} else {
-						fmt.Printf("%T %v-%v *size=%v* @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-got.Pos(), node.End()-got.Pos())
-					}
-				}
-				return true
-			})
-			// ast.Fprint(os.Stdout, fset, got, nil)
 			t.Log(b.String())
 		})
 	}
+}
+
+func dumpPositions(f *ast.File) {
+	ast.Inspect(f, func(node ast.Node) bool {
+		if node != nil {
+			if _, ok := node.(ast.Decl); ok {
+				fmt.Println("-")
+			}
+			if x, ok := node.(*ast.Ident); ok {
+				fmt.Printf("%T(%s) %v-%v *size=%v* @ %v-%v\n", x, x.Name, x.Pos(), x.End(), x.End()-x.Pos(), x.Pos()-f.Pos(), x.End()-f.Pos())
+			} else {
+				fmt.Printf("%T %v-%v *size=%v* @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-f.Pos(), node.End()-f.Pos())
+			}
+		}
+		return true
+	})
 }

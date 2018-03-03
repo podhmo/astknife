@@ -218,7 +218,6 @@ func Ident(x *ast.Ident, s *State) *ast.Ident {
 	if x == nil {
 		return nil
 	}
-	// fmt.Println("Idnt", x.Name, "NamePos", x.NamePos, "->", token.Pos(int(x.NamePos)+s.Offset()), "offset=", s.Offset())
 	return &ast.Ident{
 		NamePos: token.Pos(int(x.NamePos) + s.Offset()),
 		Name:    x.Name,
@@ -586,7 +585,6 @@ func CommentGroup(x *ast.CommentGroup, s *State) *ast.CommentGroup {
 	for i, x := range x.List {
 		ys[i] = Comment(x, s)
 	}
-	// fmt.Printf("ccc %q %d -> %d\n", x.Text(), x.Pos(), ys[0].Pos())
 	return &ast.CommentGroup{List: ys}
 }
 

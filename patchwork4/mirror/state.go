@@ -1,7 +1,6 @@
 package mirror
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 
@@ -62,8 +61,7 @@ func (s *State) StartRegion(pat, rep ast.Node, doc *ast.CommentGroup) {
 		delta += int(rep.Pos() - doc.Pos())
 	}
 	offset := int(-rep.Pos()) + base + delta
-	fmt.Printf("** start region (base=%d, offset=%d, delta=%d, comment=%v)\n", s.Base, offset, delta, doc != nil)
-	fmt.Printf("		%T pos=%d, delta=%d, (len=%d)\n", pat, pat.Pos(), delta, len(s.RegionStack))
+	// fmt.Printf("** start region (base=%d, offset=%d, delta=%d, comment=%v)\n", s.Base, offset, delta, doc != nil)
 	r := &Region{Offset: offset, Pos: token.Pos(base + delta), Ob: pat, Delta: delta}
 	s.RegionStack = append(s.RegionStack, r)
 }
@@ -77,6 +75,6 @@ func (s *State) EndRegion(dst ast.Node, comment *ast.CommentGroup) {
 	}
 	r.End = end
 	s.Base = int(r.End)
-	fmt.Printf("** end region (base=%d, offset=%d, comment=%v)\n", s.Base, r.Offset, comment != nil)
+	// fmt.Printf("** end region (base=%d, offset=%d, comment=%v)\n", s.Base, r.Offset, comment != nil)
 	s.RegionStack = s.RegionStack[:len(s.RegionStack)-1]
 }
