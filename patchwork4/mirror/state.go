@@ -1,6 +1,7 @@
 package mirror
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 
@@ -28,9 +29,12 @@ type Option struct {
 
 // Region :
 type Region struct {
-	Offset int
-	Pos    token.Pos
-	End    token.Pos
+	Pos token.Pos
+	End token.Pos
+
+	Ob     ast.Node
+	Offset int // for another *ast.File
+	Delta  int // for comment area
 }
 
 // NewRegion :
@@ -45,12 +49,22 @@ func (r *Region) IsFixed() bool {
 }
 
 // StartRegion :
-func (s *State) StartRegion(src ast.Node, doc *ast.CommentGroup) {
-	offset := int(-src.Pos()) + s.Base
-	if doc != nil {
-		offset += int(src.Pos() - doc.Pos())
+func (s *State) StartRegion(pat, rep ast.Node, doc *ast.CommentGroup) {
+	base := s.Base
+	delta := 0
+	if len(s.RegionStack) > 1 {
+		parentRegion := s.RegionStack[len(s.RegionStack)-1]
+		if !parentRegion.IsFixed() {
+			delta += int(pat.Pos()-parentRegion.Ob.Pos()) + parentRegion.Delta
+		}
 	}
-	r := &Region{Offset: offset, Pos: token.Pos(s.Base)}
+	if doc != nil {
+		delta += int(rep.Pos() - doc.Pos())
+	}
+	offset := int(-rep.Pos()) + base + delta
+	fmt.Printf("** start region (base=%d, offset=%d, delta=%d, comment=%v)\n", s.Base, offset, delta, doc != nil)
+	fmt.Printf("		%T pos=%d, delta=%d, (len=%d)\n", pat, pat.Pos(), delta, len(s.RegionStack))
+	r := &Region{Offset: offset, Pos: token.Pos(base + delta), Ob: pat, Delta: delta}
 	s.RegionStack = append(s.RegionStack, r)
 }
 
@@ -63,5 +77,6 @@ func (s *State) EndRegion(dst ast.Node, comment *ast.CommentGroup) {
 	}
 	r.End = end
 	s.Base = int(r.End)
+	fmt.Printf("** end region (base=%d, offset=%d, comment=%v)\n", s.Base, r.Offset, comment != nil)
 	s.RegionStack = s.RegionStack[:len(s.RegionStack)-1]
 }

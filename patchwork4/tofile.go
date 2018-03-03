@@ -23,6 +23,7 @@ func ToFile(p *Patchwork, filename string) *ast.File {
 		Scope:   ast.NewScope(nil),
 		Package: token.Pos(base),
 	}
+	s.Base = int(f.Name.End()) + 3
 	f.Imports = mirror.ImportSpecs(p.File.Imports, s)
 	f.Decls = mirror.Decls(p.File.Decls, s)
 
@@ -39,14 +40,9 @@ func ToFile(p *Patchwork, filename string) *ast.File {
 	f.Comments = comments // xxx
 
 	// todo: new line
-	// ast.Inspect(f, func(node ast.Node) bool {
-	// 	if node != nil {
-	// 		fmt.Printf("%T %v-%v s %v @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-f.Pos(), node.End()-f.Pos())
-	// 	}
-	// 	return true
-	// })
 
-	fmt.Println("*******", f.End(), f.Pos(), int(f.End()-f.Pos()))
+	fmt.Println("******* before", p.File.End(), p.File.Pos(), int(p.File.End()-p.File.Pos()))
+	fmt.Println("******* after", f.End(), f.Pos(), int(f.End()-f.Pos()))
 	p.Fset.AddFile(filename, -1, int(f.End()-f.Pos()))
 	return f
 }

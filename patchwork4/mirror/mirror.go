@@ -34,24 +34,31 @@ func Decl(decl ast.Decl, s *State) ast.Decl {
 	if decl == nil {
 		return nil
 	}
+	original := decl
+	if rep, ok := s.Replacing[decl]; ok {
+		decl = rep.Object.Decl.(ast.Decl)
+	}
 	switch x := decl.(type) {
 	case *ast.GenDecl:
-		new := *x
-		s.StartRegion(x, x.Doc)
-		new.Doc = CommentGroup(new.Doc, s)
-		if new.Lparen != token.NoPos {
-			new.Lparen = token.Pos(int(new.Lparen) + s.Offset())
+		s.StartRegion(original, x, x.Doc)
+		new := &ast.GenDecl{
+			Doc:    CommentGroup(x.Doc, s),
+			TokPos: token.Pos(int(x.TokPos) + s.Offset()),
+			Tok:    x.Tok,
+			Lparen: x.Lparen,
+			Specs:  Specs(x.Specs, s),
+			Rparen: x.Rparen,
 		}
-		for i, spec := range new.Specs {
-			new.Specs[i] = Spec(spec, s)
+		if new.Lparen != token.NoPos {
+			new.Lparen = token.Pos(int(x.Lparen) + s.Offset())
 		}
 		if new.Rparen != token.NoPos {
-			new.Rparen = token.Pos(int(new.Rparen) + s.Offset())
+			new.Rparen = token.Pos(int(x.Rparen) + s.Offset())
 		}
-		s.EndRegion(&new, nil)
-		return &new
+		s.EndRegion(new, nil)
+		return new
 	case *ast.FuncDecl:
-		s.StartRegion(x, x.Doc)
+		s.StartRegion(original, x, x.Doc)
 		new := &ast.FuncDecl{
 			Doc:  CommentGroup(x.Doc, s),
 			Recv: FieldList(x.Recv, s),
@@ -62,7 +69,7 @@ func Decl(decl ast.Decl, s *State) ast.Decl {
 		s.EndRegion(new, nil)
 		return new
 	case *ast.BadDecl:
-		s.StartRegion(x, nil)
+		s.StartRegion(original, x, nil)
 		new := &ast.BadDecl{
 			From: token.Pos(int(x.From) + s.Offset()),
 			To:   token.Pos(int(x.To) + s.Offset()),
@@ -97,9 +104,14 @@ func Spec(spec ast.Spec, s *State) ast.Spec {
 	if spec == nil {
 		return nil
 	}
+	original := spec
+	if rep, ok := s.Replacing[spec]; ok {
+		spec = rep.Object.Decl.(ast.Spec)
+	}
+
 	switch x := spec.(type) {
 	case *ast.ImportSpec:
-		s.StartRegion(x, x.Doc)
+		s.StartRegion(original, x, x.Doc)
 		endpos := x.EndPos
 		if endpos != token.NoPos {
 			endpos = token.Pos(int(x.EndPos) + s.Offset())
@@ -115,7 +127,7 @@ func Spec(spec ast.Spec, s *State) ast.Spec {
 		return new
 
 	case *ast.ValueSpec:
-		s.StartRegion(x, x.Doc)
+		s.StartRegion(original, x, x.Doc)
 		new := &ast.ValueSpec{
 			Doc:     CommentGroup(x.Doc, s),
 			Names:   Idents(x.Names, s),
@@ -126,7 +138,7 @@ func Spec(spec ast.Spec, s *State) ast.Spec {
 		s.EndRegion(new, new.Comment)
 		return new
 	case *ast.TypeSpec:
-		s.StartRegion(x, x.Doc)
+		s.StartRegion(original, x, x.Doc)
 		assign := x.Assign
 		if assign != token.NoPos {
 			assign = token.Pos(int(x.Assign) + s.Offset())
@@ -150,6 +162,7 @@ func FieldList(x *ast.FieldList, s *State) *ast.FieldList {
 	if x == nil {
 		return nil
 	}
+
 	opening := x.Opening
 	if opening != token.NoPos {
 		opening = token.Pos(int(x.Opening) + s.Offset())
@@ -179,13 +192,16 @@ func Field(x *ast.Field, s *State) *ast.Field {
 	if x == nil {
 		return nil
 	}
-	return &ast.Field{
+	s.StartRegion(x, x, x.Doc)
+	new := &ast.Field{
 		Doc:     CommentGroup(x.Doc, s),
 		Names:   Idents(x.Names, s),
 		Type:    Expr(x.Type, s),
 		Tag:     BasicLit(x.Tag, s),
 		Comment: CommentGroup(x.Comment, s),
 	}
+	s.EndRegion(new, new.Comment)
+	return new
 }
 
 // Idents :
@@ -202,6 +218,7 @@ func Ident(x *ast.Ident, s *State) *ast.Ident {
 	if x == nil {
 		return nil
 	}
+	// fmt.Println("Idnt", x.Name, "NamePos", x.NamePos, "->", token.Pos(int(x.NamePos)+s.Offset()), "offset=", s.Offset())
 	return &ast.Ident{
 		NamePos: token.Pos(int(x.NamePos) + s.Offset()),
 		Name:    x.Name,
@@ -218,11 +235,12 @@ func FuncType(x *ast.FuncType, s *State) *ast.FuncType {
 	if f != token.NoPos {
 		f = token.Pos(int(x.Func) + s.Offset())
 	}
-	return &ast.FuncType{
+	new := &ast.FuncType{
 		Func:    f,
 		Params:  FieldList(x.Params, s),
 		Results: FieldList(x.Results, s),
 	}
+	return new
 }
 
 // Stmts :
@@ -568,6 +586,7 @@ func CommentGroup(x *ast.CommentGroup, s *State) *ast.CommentGroup {
 	for i, x := range x.List {
 		ys[i] = Comment(x, s)
 	}
+	// fmt.Printf("ccc %q %d -> %d\n", x.Text(), x.Pos(), ys[0].Pos())
 	return &ast.CommentGroup{List: ys}
 }
 
