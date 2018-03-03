@@ -55,7 +55,7 @@ func (s *State) StartRegion(pat, rep ast.Node, doc *ast.CommentGroup) {
 	if len(s.RegionStack) > 1 {
 		parentRegion := s.RegionStack[len(s.RegionStack)-1]
 		if !parentRegion.IsFixed() {
-			delta += int(pat.Pos()-parentRegion.Ob.Pos()) + parentRegion.Delta
+			delta += parentRegion.Delta
 		}
 	}
 	if doc != nil {

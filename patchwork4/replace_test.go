@@ -141,6 +141,9 @@ func G() int {
 
 			ast.Inspect(f0, func(node ast.Node) bool {
 				if node != nil {
+					if _, ok := node.(ast.Decl); ok {
+						fmt.Println("-")
+					}
 					if x, ok := node.(*ast.Ident); ok {
 						fmt.Printf("%T(%s) %v-%v *size=%v* @ %v-%v\n", x, x.Name, x.Pos(), x.End(), x.End()-x.Pos(), x.Pos()-f0.Pos(), x.End()-f0.Pos())
 					} else {
@@ -152,6 +155,9 @@ func G() int {
 			fmt.Println("----------------------------------------")
 			ast.Inspect(got, func(node ast.Node) bool {
 				if node != nil {
+					if _, ok := node.(ast.Decl); ok {
+						fmt.Println("-")
+					}
 					if x, ok := node.(*ast.Ident); ok {
 						fmt.Printf("%T(%s) %v-%v *size=%v* @ %v-%v\n", x, x.Name, x.Pos(), x.End(), x.End()-x.Pos(), x.Pos()-got.Pos(), x.End()-got.Pos())
 					} else {
