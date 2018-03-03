@@ -6,17 +6,29 @@ import (
 	"go/ast"
 	"go/token"
 
+	"github.com/podhmo/astknife/patchwork4/debug"
 	"github.com/podhmo/astknife/patchwork4/lookup"
 )
 
 var errNotfound = errors.New("not found")
 
 // New :
-func New(fset *token.FileSet, f *ast.File) *Patchwork {
-	return &Patchwork{
+func New(fset *token.FileSet, f *ast.File, ops ...func(*Patchwork)) *Patchwork {
+	p := &Patchwork{
 		Fset:      fset,
 		File:      f,
 		Replacing: map[ast.Node]*lookup.Result{},
+	}
+	for _, op := range ops {
+		op(p)
+	}
+	return p
+}
+
+// WithDebug :
+func WithDebug(debug *debug.Debug) func(*Patchwork) {
+	return func(p *Patchwork) {
+		p.Debug = debug
 	}
 }
 
@@ -27,6 +39,8 @@ type Patchwork struct {
 	Replacing map[ast.Node]*lookup.Result
 	Appending []*lookup.Result
 	// todo: support Removings
+
+	Debug *debug.Debug
 }
 
 // Append :

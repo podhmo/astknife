@@ -4,34 +4,34 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
-	"go/parser"
 	"go/token"
 	"testing"
 
+	"github.com/podhmo/astknife/patchwork4/debug"
 	"github.com/podhmo/astknife/patchwork4/lookup"
 	"github.com/podhmo/printer"
 )
 
 func TestReplace(t *testing.T) {
 	code0 := `
-	package p
+package p
 
-	// F : 0
-	func F() int {
-		// this is f0's comment
-		return 10
-	}
+// F : 0
+func F() int {
+    // this is f0's comment
+    return 10
+}
 
 
-	// S : 0
-	type S struct {
-		// Name :
-		Name string // name
-		// Age :
-		Age string // age
-		// Nickname :
-		Nickname string // nickname
-	}
+// S : 0
+type S struct {
+    // Name :
+    Name string // name
+    // Age :
+    Age string // age
+    // Nickname :
+    Nickname string // nickname
+}
 
 // G : 0
 func G() int {
@@ -68,15 +68,15 @@ package p
 
 // hmm
 
-	// S : 2
-	type S struct {
-		// Name :
-		Name string // name
-		// Age :
-		Age string // age
-		// Nickname :
-		Nickname string // nickname
-	}
+// S : 2
+type S struct {
+    // Name :
+    Name string // name
+    // Age :
+    Age string // age
+    // Nickname :
+    Nickname string // nickname
+}
 
 // G : 2
 func G() int {
@@ -120,15 +120,16 @@ func G() int {
 		c := c
 		t.Run(c.msg, func(t *testing.T) {
 			fset := token.NewFileSet()
-			f0, err := parser.ParseFile(fset, "f0.go", code0, parser.ParseComments)
+			debug := debug.New(fset)
+			f0, err := debug.ParseSource("f0.go", code0)
 			if err != nil {
 				t.Fatal(err)
 			}
-			f1, err := parser.ParseFile(fset, "f1.go", c.code, parser.ParseComments)
+			f1, err := debug.ParseSource("f1.go", c.code)
 			if err != nil {
 				t.Fatal(err)
 			}
-			p := New(fset, f0)
+			p := New(fset, f0, WithDebug(debug))
 			if err := p.Replace(lookup.Lookup(c.name, f0), lookup.Lookup(c.name, f1)); err != nil {
 				t.Fatal(err)
 			}

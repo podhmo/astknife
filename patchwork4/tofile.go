@@ -6,26 +6,30 @@ import (
 	"go/token"
 	"sort"
 
-	"github.com/podhmo/astknife/patchwork4/mirror"
+	"github.com/podhmo/astknife/patchwork4/buildtree"
 )
 
 // ToFile :
 func ToFile(p *Patchwork, filename string) *ast.File {
 	base := p.Fset.Base()
-	s := &mirror.State{
+	fmt.Println("root.start", base)
+	s := &buildtree.State{
+		Fset:        p.Fset,
+		Debug:       p.Debug,
 		Replacing:   p.Replacing,
 		Appending:   p.Appending,
-		RegionStack: []*mirror.Region{mirror.NewRegion(p.File, base)},
+		RegionStack: []*buildtree.Region{buildtree.NewRegion(p.File, base)},
 		Base:        base,
 	}
 	f := &ast.File{
-		Name:    mirror.Ident(p.File.Name, s), // xxx
+		Name:    buildtree.Ident(p.File.Name, s), // xxx
 		Scope:   ast.NewScope(nil),
 		Package: token.Pos(base),
 	}
-	s.Base = int(f.Name.End()) + 3
-	f.Imports = mirror.ImportSpecs(p.File.Imports, s)
-	f.Decls = mirror.Decls(p.File.Decls, s)
+	s.Base = int(f.Name.End())
+	fmt.Println("root.start2", s.Base)
+	f.Imports = buildtree.ImportSpecs(p.File.Imports, s)
+	f.Decls = buildtree.Decls(p.File.Decls, s)
 
 	var comments []*ast.CommentGroup
 	ast.Inspect(f, func(node ast.Node) bool {
@@ -38,11 +42,8 @@ func ToFile(p *Patchwork, filename string) *ast.File {
 	})
 	sort.Slice(comments, func(i, j int) bool { return comments[i].Pos() < comments[j].Pos() })
 	f.Comments = comments // xxx
-
 	// todo: new line
-
-	fmt.Println("******* before", p.File.End(), p.File.Pos(), int(p.File.End()-p.File.Pos()))
-	fmt.Println("******* after", f.End(), f.Pos(), int(f.End()-f.Pos()))
 	p.Fset.AddFile(filename, -1, int(f.End()-f.Pos()))
+	fmt.Println("root.end", f.End()+1)
 	return f
 }
