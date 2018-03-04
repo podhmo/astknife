@@ -48,11 +48,15 @@ func ToFile(p *Patchwork, filename string) *ast.File {
 	tokenf := p.Fset.AddFile(filename, -1, int(f.End()-f.Pos()))
 	// todo: new line
 	lines := make([]int, len(s.Lines))
-	for i, pos := range lines {
+	i := 0
+	for _, pos := range s.Lines {
 		lines[i] = pos
+		i++
 	}
+    sort.Ints(lines)
 	tokenf.SetLines(lines)
-	tokenf.SetLines([]int{0, 10})
+	// tokenf.SetLines([]int{0, 9, 103})
+	fmt.Println(lines)
 	fmt.Println("root.end", f.End()+1)
 	return f
 }

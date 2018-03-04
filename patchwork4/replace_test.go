@@ -138,13 +138,14 @@ func G() int {
 			got := ToFile(p, "newf0.go")
 			printer.Fprint(&b, fset, got)
 
-			tf := fset.File(got.Pos())
-			ast.Inspect(got, func(node ast.Node) bool {
-				if node != nil {
-					fmt.Printf("%02d: %T (%d)\n", tf.Line(node.Pos()), node, int(node.Pos())-tf.Base())
-				}
-				return true
-			})
+			// tf := fset.File(got.Pos())
+			// ast.Inspect(got, func(node ast.Node) bool {
+			// 	if node != nil {
+			// 		fmt.Printf("%02d: %T (%d,%d)\n", tf.Line(node.Pos()), node, int(node.Pos())-tf.Base(), int(node.End())-tf.Base())
+			// 	}
+			// 	return true
+			// })
+			dumpPositions(got)
 			t.Log(b.String())
 		})
 	}
@@ -156,9 +157,12 @@ func dumpPositions(f *ast.File) {
 			if _, ok := node.(ast.Decl); ok {
 				fmt.Println("-")
 			}
-			if x, ok := node.(*ast.Ident); ok {
+			switch x := node.(type) {
+			case *ast.Ident:
 				fmt.Printf("%T(%s) %v-%v *size=%v* @ %v-%v\n", x, x.Name, x.Pos(), x.End(), x.End()-x.Pos(), x.Pos()-f.Pos(), x.End()-f.Pos())
-			} else {
+			case *ast.CommentGroup:
+				fmt.Printf("%T(%q) %v-%v *size=%v* @ %v-%v\n", x, x.Text(), x.Pos(), x.End(), x.End()-x.Pos(), x.Pos()-f.Pos(), x.End()-f.Pos())
+			default:
 				fmt.Printf("%T %v-%v *size=%v* @ %v-%v\n", node, node.Pos(), node.End(), node.End()-node.Pos(), node.Pos()-f.Pos(), node.End()-f.Pos())
 			}
 		}

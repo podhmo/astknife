@@ -92,6 +92,7 @@ func (s *State) EndRegion(dst ast.Node, comment *ast.CommentGroup) {
 
 	r.End = end
 	fmt.Printf("region fixed (%d, %d). (base=%d, original=(%s, %s))\n", r.Pos, r.End, s.Base, s.Fset.Position(r.sourcePos), s.Fset.Position(r.sourceEnd))
+
 	if s.Debug != nil {
 		fmt.Println("----------------------------------------")
 		f := s.Fset.File(r.sourcePos)
@@ -115,6 +116,7 @@ func (s *State) EndRegion(dst ast.Node, comment *ast.CommentGroup) {
 			}
 		}
 	}
+
 	s.Base = int(r.End)
 	// fmt.Printf("** end region (base=%d, offset=%d, comment=%v)\n", s.Base, r.Offset, comment != nil)
 	s.RegionStack = s.RegionStack[:len(s.RegionStack)-1]
