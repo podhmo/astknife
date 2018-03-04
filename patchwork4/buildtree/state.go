@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"reflect"
 
 	"github.com/podhmo/astknife/patchwork4/debug"
 	"github.com/podhmo/astknife/patchwork4/lookup"
@@ -19,7 +20,10 @@ type State struct {
 	Appending []*lookup.Result
 
 	RegionStack []*Region
-	Base        int
+	Lines       map[int]int
+
+	FileBase int
+	Base     int
 }
 
 // Offset :
@@ -93,8 +97,23 @@ func (s *State) EndRegion(dst ast.Node, comment *ast.CommentGroup) {
 		f := s.Fset.File(r.sourcePos)
 		pos := s.Fset.Position(r.sourcePos)
 		source := s.Debug.SourceMap[pos.Filename]
-		fmt.Println(source[f.Offset(r.sourcePos):f.Offset(r.sourceEnd)])
+		fmt.Println(f.Name(), source[f.Offset(r.sourcePos):f.Offset(r.sourceEnd)])
 		fmt.Println("----------------------------------------")
+		{
+			// todo: cache
+			// f := s.Fset.File(r.sourcePos)
+			lines := reflect.ValueOf(f).Elem().FieldByName("lines")
+			for i := 0; i < lines.Len(); i++ {
+				p := f.Base() + int(lines.Index(i).Int())
+				if int(r.sourceEnd) < p {
+					break
+				}
+				if int(r.sourcePos) <= p {
+					s.Lines[p] = r.Offset + p - s.FileBase
+					fmt.Println("	", p, "->", r.Offset+p, "(", f.Name(), s.Lines[p], ")")
+				}
+			}
+		}
 	}
 	s.Base = int(r.End)
 	// fmt.Printf("** end region (base=%d, offset=%d, comment=%v)\n", s.Base, r.Offset, comment != nil)

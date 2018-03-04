@@ -18,7 +18,9 @@ func ToFile(p *Patchwork, filename string) *ast.File {
 		Debug:       p.Debug,
 		Replacing:   p.Replacing,
 		Appending:   p.Appending,
+		Lines:       map[int]int{},
 		RegionStack: []*buildtree.Region{buildtree.NewRegion(p.File, base)},
+		FileBase:    base,
 		Base:        base,
 	}
 	f := &ast.File{
@@ -42,8 +44,15 @@ func ToFile(p *Patchwork, filename string) *ast.File {
 	})
 	sort.Slice(comments, func(i, j int) bool { return comments[i].Pos() < comments[j].Pos() })
 	f.Comments = comments // xxx
+
+	tokenf := p.Fset.AddFile(filename, -1, int(f.End()-f.Pos()))
 	// todo: new line
-	p.Fset.AddFile(filename, -1, int(f.End()-f.Pos()))
+	lines := make([]int, len(s.Lines))
+	for i, pos := range lines {
+		lines[i] = pos
+	}
+	tokenf.SetLines(lines)
+	tokenf.SetLines([]int{0, 10})
 	fmt.Println("root.end", f.End()+1)
 	return f
 }

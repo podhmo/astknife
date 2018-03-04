@@ -137,6 +137,14 @@ func G() int {
 			var b bytes.Buffer
 			got := ToFile(p, "newf0.go")
 			printer.Fprint(&b, fset, got)
+
+			tf := fset.File(got.Pos())
+			ast.Inspect(got, func(node ast.Node) bool {
+				if node != nil {
+					fmt.Printf("%02d: %T (%d)\n", tf.Line(node.Pos()), node, int(node.Pos())-tf.Base())
+				}
+				return true
+			})
 			t.Log(b.String())
 		})
 	}
