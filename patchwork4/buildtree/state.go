@@ -23,8 +23,9 @@ type State struct {
 	LatestRegion *Region
 	Lines        map[int]int
 
-	FileBase int
-	Base     int
+	FileBase          int
+	Base              int
+	CollectedComments map[token.Pos]*ast.CommentGroup
 }
 
 // Offset :
@@ -49,6 +50,7 @@ type Region struct {
 	sourceFile *ast.File
 	Offset     int // for another *ast.File
 	Delta      int // for comment area
+	Comments   []*ast.CommentGroup
 }
 
 // NewRegion :
@@ -78,10 +80,15 @@ func (s *State) StartRegion(pat, rep ast.Node, doc *ast.CommentGroup, file *ast.
 		}
 	}
 	var sourcePos token.Pos
+	var comments []*ast.CommentGroup
 	{
 		if s.LatestRegion.sourceFile == file {
 			for _, cg := range comment.Collect(file.Comments, s.LatestRegion.sourceEnd, pat.Pos()) {
-				fmt.Printf("%s	!! %q(%d)\n", strings.Repeat("  ", len(s.RegionStack)), cg.Text(), delta)
+				// fmt.Printf("%s	!! %q(%d)\n", strings.Repeat("  ", len(s.RegionStack)), cg.Text(), delta)
+				if _, ok := s.CollectedComments[cg.Pos()]; !ok {
+					comments = append(comments, cg)
+					// todo: + delta?
+				}
 			}
 		}
 	}
@@ -102,6 +109,7 @@ func (s *State) StartRegion(pat, rep ast.Node, doc *ast.CommentGroup, file *ast.
 		sourceFile: file,
 		sourcePos:  sourcePos,
 		Delta:      delta,
+		Comments:   comments,
 	}
 	s.RegionStack = append(s.RegionStack, r)
 }
@@ -120,9 +128,13 @@ func (s *State) EndRegion(dst ast.Node, lastComment *ast.CommentGroup) {
 	r.End = end
 	fmt.Printf("%sregion fixed (%d, %d). (base=%d, original=(%s, %s))\n", strings.Repeat("  ", len(s.RegionStack)), r.Pos, r.End, s.Base, s.Fset.Position(r.sourcePos), s.Fset.Position(r.sourceEnd))
 
-	if s.Debug != nil {
-		for _, cg := range comment.Collect(r.sourceFile.Comments, r.sourcePos, r.sourceEnd) {
-			fmt.Printf("%s	** %q\n", strings.Repeat("  ", len(s.RegionStack)), cg.Text())
+	for _, cg := range comment.Collect(r.sourceFile.Comments, r.sourcePos, r.sourceEnd) {
+		r.Comments = append(r.Comments, cg)
+	}
+	for _, cg := range r.Comments {
+		if _, ok := s.CollectedComments[cg.Pos()]; !ok {
+			fmt.Printf("%s	(%d) ** %q\n", strings.Repeat("  ", len(s.RegionStack)), cg.Pos(), cg.Text())
+			s.CollectedComments[cg.Pos()] = CommentGroup(cg, s)
 		}
 	}
 
