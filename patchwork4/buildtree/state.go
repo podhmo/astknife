@@ -79,9 +79,9 @@ func (s *State) StartRegion(pat, rep ast.Node, doc *ast.CommentGroup, file *ast.
 	}
 	var sourcePos token.Pos
 	{
-		if s.LatestRegion.sourceFile == s.RegionStack[0].sourceFile {
-			for _, cg := range comment.Collect(file.Comments, s.LatestRegion.pat.End(), pat.Pos()) {
-				fmt.Printf("%s	!! %q\n", strings.Repeat("  ", len(s.RegionStack)), cg.Text())
+		if s.LatestRegion.sourceFile == file {
+			for _, cg := range comment.Collect(file.Comments, s.LatestRegion.sourceEnd, pat.Pos()) {
+				fmt.Printf("%s	!! %q(%d)\n", strings.Repeat("  ", len(s.RegionStack)), cg.Text(), delta)
 			}
 		}
 	}
@@ -93,7 +93,7 @@ func (s *State) StartRegion(pat, rep ast.Node, doc *ast.CommentGroup, file *ast.
 	}
 
 	offset := int(-rep.Pos()) + base + delta
-	fmt.Printf("%sstart region (base=%d, offset=%d, delta=%d, comment=%v)\n", strings.Repeat("  ", len(s.RegionStack)), s.Base, offset, delta, doc != nil)
+	fmt.Printf("%sstart region (base=%d, offset=%d, delta=%d, comment=%v, file=%s)\n", strings.Repeat("  ", len(s.RegionStack)), s.Base, offset, delta, doc != nil, s.Fset.File(file.Pos()).Name())
 	r := &Region{
 		Offset:     offset,
 		Pos:        token.Pos(base + delta),
@@ -129,5 +129,5 @@ func (s *State) EndRegion(dst ast.Node, lastComment *ast.CommentGroup) {
 	s.Base = int(r.End)
 	s.RegionStack = s.RegionStack[:len(s.RegionStack)-1]
 	s.LatestRegion = r
-	fmt.Printf("%send region (base=%d, offset=%d, lastComment=%v)\n", strings.Repeat("  ", len(s.RegionStack)), s.Base, r.Offset, lastComment != nil)
+	fmt.Printf("%send region (base=%d, offset=%d, lastComment=%v, file=%ss)\n", strings.Repeat("  ", len(s.RegionStack)), s.Base, r.Offset, lastComment != nil, s.Fset.File(r.sourceFile.Pos()).Name())
 }
