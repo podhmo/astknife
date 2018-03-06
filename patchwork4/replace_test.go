@@ -22,6 +22,7 @@ func F() int {
     return 10
 }
 
+// toplevel comment
 
 // S : 0
 type S struct {
@@ -145,7 +146,6 @@ func G() int {
 			// 	}
 			// 	return true
 			// })
-			dumpPositions(got)
 			t.Log(b.String())
 		})
 	}

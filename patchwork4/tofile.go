@@ -23,6 +23,8 @@ func ToFile(p *Patchwork, filename string) *ast.File {
 		FileBase:    base,
 		Base:        base,
 	}
+	s.LatestRegion = s.RegionStack[0] // xxx
+
 	f := &ast.File{
 		Name:    buildtree.Ident(p.File.Name, s), // xxx
 		Scope:   ast.NewScope(nil),
@@ -53,7 +55,7 @@ func ToFile(p *Patchwork, filename string) *ast.File {
 		lines[i] = pos
 		i++
 	}
-    sort.Ints(lines)
+	sort.Ints(lines)
 	tokenf.SetLines(lines)
 	// tokenf.SetLines([]int{0, 9, 103})
 	fmt.Println(lines)

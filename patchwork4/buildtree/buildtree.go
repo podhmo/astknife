@@ -35,12 +35,14 @@ func Decl(decl ast.Decl, s *State) ast.Decl {
 		return nil
 	}
 	original := decl
+	file := s.File()
 	if rep, ok := s.Replacing[decl]; ok {
 		decl = rep.Object.Decl.(ast.Decl)
+		file = rep.File
 	}
 	switch x := decl.(type) {
 	case *ast.GenDecl:
-		s.StartRegion(original, x, x.Doc)
+		s.StartRegion(original, x, x.Doc, file)
 		new := &ast.GenDecl{
 			Doc:    CommentGroup(x.Doc, s),
 			TokPos: token.Pos(int(x.TokPos) + s.Offset()),
@@ -58,7 +60,7 @@ func Decl(decl ast.Decl, s *State) ast.Decl {
 		s.EndRegion(new, nil)
 		return new
 	case *ast.FuncDecl:
-		s.StartRegion(original, x, x.Doc)
+		s.StartRegion(original, x, x.Doc, file)
 		new := &ast.FuncDecl{
 			Doc:  CommentGroup(x.Doc, s),
 			Recv: FieldList(x.Recv, s),
@@ -69,7 +71,7 @@ func Decl(decl ast.Decl, s *State) ast.Decl {
 		s.EndRegion(new, nil)
 		return new
 	case *ast.BadDecl:
-		s.StartRegion(original, x, nil)
+		s.StartRegion(original, x, nil, file)
 		new := &ast.BadDecl{
 			From: token.Pos(int(x.From) + s.Offset()),
 			To:   token.Pos(int(x.To) + s.Offset()),
@@ -104,14 +106,16 @@ func Spec(spec ast.Spec, s *State) ast.Spec {
 	if spec == nil {
 		return nil
 	}
+	file := s.File()
 	original := spec
 	if rep, ok := s.Replacing[spec]; ok {
 		spec = rep.Object.Decl.(ast.Spec)
+		file = rep.File
 	}
 
 	switch x := spec.(type) {
 	case *ast.ImportSpec:
-		s.StartRegion(original, x, x.Doc)
+		s.StartRegion(original, x, x.Doc, file)
 		endpos := x.EndPos
 		if endpos != token.NoPos {
 			endpos = token.Pos(int(x.EndPos) + s.Offset())
@@ -127,7 +131,7 @@ func Spec(spec ast.Spec, s *State) ast.Spec {
 		return new
 
 	case *ast.ValueSpec:
-		s.StartRegion(original, x, x.Doc)
+		s.StartRegion(original, x, x.Doc, file)
 		new := &ast.ValueSpec{
 			Doc:     CommentGroup(x.Doc, s),
 			Names:   Idents(x.Names, s),
@@ -138,7 +142,7 @@ func Spec(spec ast.Spec, s *State) ast.Spec {
 		s.EndRegion(new, new.Comment)
 		return new
 	case *ast.TypeSpec:
-		s.StartRegion(original, x, x.Doc)
+		s.StartRegion(original, x, x.Doc, file)
 		assign := x.Assign
 		if assign != token.NoPos {
 			assign = token.Pos(int(x.Assign) + s.Offset())
@@ -192,7 +196,7 @@ func Field(x *ast.Field, s *State) *ast.Field {
 	if x == nil {
 		return nil
 	}
-	s.StartRegion(x, x, x.Doc)
+	s.StartRegion(x, x, x.Doc, s.File())
 	new := &ast.Field{
 		Doc:     CommentGroup(x.Doc, s),
 		Names:   Idents(x.Names, s),
