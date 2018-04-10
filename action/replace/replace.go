@@ -2,8 +2,10 @@ package replace
 
 import (
 	"go/ast"
+	"go/token"
 
 	"github.com/pkg/errors"
+	"github.com/podhmo/astknife/action/comment"
 	"github.com/podhmo/astknife/lookup"
 )
 
@@ -19,47 +21,82 @@ import (
 // 	Lbl                // label
 // )
 
-// todo: comment support
+/*
+MEMO: for printer output correctly, surround with comments that replacement file.
 
-//ToplevelToFile :
-func ToplevelToFile(dst *ast.File, dstOb *ast.Object, ob *ast.Object) (ok bool, err error) {
-	if ob == nil {
+e.g.
+
+The situation, replacing f0.F to f1.F.
+
+f0.go
+
+```
+// F : f0
+func F() int {
+	return 0
+}
+```
+
+f1.go
+
+```
+// F : f1
+func F() {
+	return 1
+}
+```
+
+After replace method called.
+
+```
+// F : f1 (comment of replacement)
+func F() {
+	return 1
+} // (comment of replacement)
+```
+
+The reason of this, go/printer's printing method depends on physical position(token.Pos), and decision the timing of writing comment, is `current.Pos() > comment.Pos()`
+*/
+
+// Toplevel :
+func Toplevel(fset *token.FileSet, dst *ast.File, dstOb *ast.Object, replacement *ast.Object, comments []*ast.CommentGroup) (ok bool, err error) {
+	if replacement == nil {
 		return
 	}
 
-	switch ob.Kind {
+	switch replacement.Kind {
 	case ast.Typ:
 		dstSpec, can := dstOb.Decl.(ast.Spec)
 		if !can {
-			err = errors.Errorf("invalid object type %s dst (kind=%q)", ob.Type, ob.Kind) // xxx
+			err = errors.Errorf("invalid object type %s dst (kind=%q)", replacement.Type, replacement.Kind) // xxx
 			return
 		}
-		replacement, can := ob.Decl.(ast.Spec)
+		t, can := replacement.Decl.(ast.Spec)
 		if !can {
-			err = errors.Errorf("invalid object type %s replacement (kind=%q)", ob.Type, ob.Kind) // xxx
+			err = errors.Errorf("invalid object type %s replacement (kind=%q)", replacement.Type, replacement.Kind) // xxx
 			return
 		}
-		return SpecToFile(dst, dstSpec, replacement)
+		return Spec(fset, dst, dstSpec, t, comments)
 	case ast.Fun:
 		dstDecl, can := dstOb.Decl.(*ast.FuncDecl)
 		if !can {
-			err = errors.Errorf("invalid object type %s dst (kind=%q)", ob.Type, ob.Kind) // xxx
+			err = errors.Errorf("invalid object type %s dst (kind=%q)", replacement.Type, replacement.Kind) // xxx
 			return
 		}
-		replacement, can := ob.Decl.(*ast.FuncDecl)
+		t, can := replacement.Decl.(*ast.FuncDecl)
 		if !can {
-			err = errors.Errorf("invalid object type %s replacement (kind=%q)", ob.Type, ob.Kind) // xxx
+			err = errors.Errorf("invalid object type %s replacement (kind=%q)", t.Type, replacement.Kind) // xxx
 			return
 		}
-		return FunctionToFile(dst, dstDecl, replacement)
+		return Function(fset, dst, dstDecl, t, comments)
 	default:
-		err = errors.Errorf("unsupported object type %s (kind=%q)", ob.Type, ob.Kind)
+		err = errors.Errorf("unsupported object type %s (kind=%q)", replacement.Type, replacement.Kind)
 		return
 	}
 }
 
-//SpecToFile :
-func SpecToFile(dst *ast.File, dstSpec ast.Spec, replacement ast.Spec) (ok bool, err error) {
+// Spec :
+func Spec(fset *token.FileSet, dst *ast.File, dstSpec ast.Spec, replacement ast.Spec, comments []*ast.CommentGroup) (ok bool, err error) {
 	ast.Inspect(dst, func(node ast.Node) bool {
 		switch t := node.(type) {
 		case *ast.GenDecl:
@@ -74,6 +111,7 @@ func SpecToFile(dst *ast.File, dstSpec ast.Spec, replacement ast.Spec) (ok bool,
 			}
 			t.Specs = newspec
 			return false
+			// todo:
 			// case *ast.FuncDecl:
 			// case *ast.BadDecl:
 		}
@@ -82,23 +120,29 @@ func SpecToFile(dst *ast.File, dstSpec ast.Spec, replacement ast.Spec) (ok bool,
 	return
 }
 
-// FunctionToFile :
-func FunctionToFile(dst *ast.File, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl) (ok bool, err error) {
+// Function :
+func Function(fset *token.FileSet, dst *ast.File, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl, comments []*ast.CommentGroup) (ok bool, err error) {
 	if replacement == nil {
 		return
 	}
+
 	for i, decl := range dst.Decls {
 		if decl == dstDecl {
 			dst.Decls[i] = replacement
 			ok = true
+
+			// todo: performance tuning
+			s := comment.New(fset, dst)
+			s.ReplaceFromOther(decl, replacement, comment.CollectFromNode(comments, replacement))
+			dst.Comments = s.Comments()
 			return
 		}
 	}
 	return
 }
 
-// MethodToFile :
-func MethodToFile(dst *ast.File, ob *ast.Object, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl) (ok bool, err error) {
+// Method :
+func Method(fset *token.FileSet, dst *ast.File, ob *ast.Object, dstDecl *ast.FuncDecl, replacement *ast.FuncDecl, comments []*ast.CommentGroup) (ok bool, err error) {
 	if replacement == nil {
 		return
 	}
