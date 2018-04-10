@@ -126,9 +126,12 @@ func (s *State) EndRegion(dst ast.Node, lastComment *ast.CommentGroup) {
 	}
 
 	r.End = end
-	fmt.Printf("%sregion fixed (%d, %d). (base=%d, original=(%s, %s))\n", strings.Repeat("  ", len(s.RegionStack)), r.Pos, r.End, s.Base, s.Fset.Position(r.sourcePos), s.Fset.Position(r.sourceEnd))
+	fmt.Printf("%sregion fixed %T (%d, %d). (base=%d, original=(%s, %s))\n", strings.Repeat("  ", len(s.RegionStack)), r.pat, r.Pos, r.End, s.Base, s.Fset.Position(r.sourcePos), s.Fset.Position(r.sourceEnd))
 
-	for _, cg := range comment.Collect(r.sourceFile.Comments, r.sourcePos, r.sourceEnd) {
+	for _, cg := range comment.Collect(r.sourceFile.Comments, r.sourcePos, r.pat.Pos()) {
+		r.Comments = append(r.Comments, cg)
+	}
+	for _, cg := range comment.Collect(r.sourceFile.Comments, r.pat.End(), r.sourceEnd) {
 		r.Comments = append(r.Comments, cg)
 	}
 	for _, cg := range r.Comments {

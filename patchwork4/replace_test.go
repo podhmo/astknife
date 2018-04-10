@@ -26,13 +26,13 @@ func F() int {
 
 // S : 0
 type S struct {
-    // Name :
+    // Name : 0
     Name string // name
-    // Age :
+    // Age : 0
     Age string // age
-    // Nickname :
+    // Nickname : 0
     Nickname string // nickname
-}
+} // end of S 0
 
 // G : 0
 func G() int {
@@ -71,13 +71,13 @@ package p
 
 // S : 2
 type S struct {
-    // Name :
+    // Name : 2
     Name string // name
-    // Age :
+    // Age : 2
     Age string // age
-    // Nickname :
+    // Nickname : 2
     Nickname string // nickname
-}
+} // end of S 2
 
 // G : 2
 func G() int {
