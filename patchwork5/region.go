@@ -28,13 +28,26 @@ type Ref interface {
 type Region struct {
 	f        *ast.File
 	Ref      Ref
-	Comments []*ast.CommentGroup
 	Origin   int
 	NewLines []int
 }
 
 func (r *Region) String() string {
 	return fmt.Sprintf("<region %s>", r.Ref)
+}
+
+// CommentRef :
+type CommentRef struct {
+	Comments []*ast.CommentGroup
+}
+
+// Name :
+func (r *CommentRef) Name() string {
+	return ""
+}
+
+func (r *CommentRef) String() string {
+	return fmt.Sprintf("<commentref>")
 }
 
 // DeclRef :

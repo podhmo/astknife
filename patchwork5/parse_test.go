@@ -77,6 +77,33 @@ func Bye(){}
 			},
 		},
 		{
+			msg: "func-with-comment",
+			source: `
+// header
+
+package p
+
+// middle
+
+// Hello :
+func Hello(){}
+
+// middle2
+
+// Bye :
+func Bye(){}
+
+// footer
+`,
+			expectedShapes: []string{
+				`<commentref>`,
+				`<declref name="Hello">`,
+				`<commentref>`,
+				`<declref name="Bye">`,
+				`<commentref>`,
+			},
+		},
+		{
 			msg: "import",
 			source: `
 package p
@@ -115,7 +142,6 @@ import (
 
 			require.NoError(t, err)
 			file := parseASTFile(f)
-
 			shapes := make([]string, len(file.Regions))
 			for i := range file.Regions {
 				shapes[i] = file.Regions[i].Ref.String()
