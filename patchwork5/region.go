@@ -3,6 +3,7 @@ package patchwork5
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 )
 
 // File :
@@ -11,11 +12,11 @@ type File struct {
 }
 
 // NewFile :
-func NewFile(f *ast.File) *File {
+func NewFile(fset *token.FileSet, f *ast.File) *File {
 	if f == nil {
 		return nil
 	}
-	return parseASTFile(f)
+	return parseASTFile(fset, f)
 }
 
 // Ref :
@@ -26,10 +27,10 @@ type Ref interface {
 
 // Region :
 type Region struct {
-	f        *ast.File
-	Ref      Ref
-	Origin   int
-	NewLines []int
+	f      *ast.File
+	Ref    Ref
+	Origin int
+	Lines  []int
 }
 
 func (r *Region) String() string {

@@ -141,7 +141,7 @@ import (
 			f, err := parser.ParseFile(fset, "", c.source, parser.ParseComments)
 
 			require.NoError(t, err)
-			file := parseASTFile(f)
+			file := parseASTFile(fset, f)
 			shapes := make([]string, len(file.Regions))
 			for i := range file.Regions {
 				shapes[i] = file.Regions[i].Ref.String()

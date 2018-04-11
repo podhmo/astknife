@@ -4,10 +4,22 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"reflect"
 )
 
-func parseASTFile(f *ast.File) *File {
-	p := &parserFromAST{f: f}
+func parseASTFile(fset *token.FileSet, f *ast.File) *File {
+	tokenf := fset.File(f.Pos())
+	reflines := reflect.ValueOf(tokenf).Elem().FieldByName("lines")
+	lines := make([]int, reflines.Len())
+	for i := range lines {
+		lines[i] = int(reflines.Index(i).Int())
+	}
+
+	p := &parserFromAST{
+		f:     f,
+		base:  tokenf.Base(),
+		lines: lines,
+	}
 	p.parseDecls(f.Decls)
 	end := f.End()
 	if len(f.Comments) > 0 {
@@ -23,11 +35,14 @@ func parseASTFile(f *ast.File) *File {
 }
 
 type parserFromAST struct {
-	f       *ast.File
-	regions []*Region
+	f     *ast.File
+	lines []int
+	base  int
 
+	regions    []*Region
 	currentPos int
 	commentIdx int
+	linesIdx   int
 }
 
 func (p *parserFromAST) parseComments(pos token.Pos) {
@@ -44,11 +59,14 @@ func (p *parserFromAST) parseComments(pos token.Pos) {
 		p.commentIdx = i
 	}
 	if len(comments) > 0 {
-		p.regions = append(p.regions, &Region{
+		pos := comments[0].Pos()
+		region := &Region{
 			f:      p.f,
-			Origin: int(comments[0].Pos()),
+			Origin: int(pos),
 			Ref:    &CommentRef{Comments: comments},
-		})
+			Lines:  p.calcLines(pos, comments[len(comments)-1].End()),
+		}
+		p.regions = append(p.regions, region)
 	}
 }
 
@@ -63,6 +81,23 @@ func (p *parserFromAST) dropComments(pos token.Pos) {
 		}
 		p.commentIdx = i
 	}
+}
+
+// calcLines returns offset list of each region's origin
+func (p *parserFromAST) calcLines(pos, pend token.Pos) []int {
+	start := int(pos) - p.base
+	end := int(pend) - p.base
+	var lines []int
+	for i := p.linesIdx; i < len(p.lines); i++ {
+		if p.lines[i] < start {
+			continue
+		}
+		lines = append(lines, (p.lines[i] - start))
+		if p.lines[i] > end {
+			break
+		}
+	}
+	return lines
 }
 
 func (p *parserFromAST) parseDecls(decls []ast.Decl) {
@@ -85,31 +120,50 @@ func (p *parserFromAST) parseDecl(decl ast.Decl) {
 		}
 		p.parseComments(origin)
 		p.regions = append(p.regions, &Region{
+			f:      p.f,
 			Origin: int(origin),
 			Ref:    &DeclHeadRef{decl: x},
+			Lines:  p.calcLines(origin, x.Specs[0].Pos()),
 		})
 		p.parseSpecs(x.Specs)
-		p.regions = append(p.regions, &Region{Ref: &DeclTailRef{decl: x}})
-		p.dropComments(x.End())
+
+		tailOrigin := x.End()
+		if x.Rparen != token.NoPos {
+			tailOrigin = x.Rparen
+		}
+		end := x.End()
+		p.regions = append(p.regions, &Region{
+			f:      p.f,
+			Origin: int(tailOrigin),
+			Ref:    &DeclTailRef{decl: x},
+			Lines:  p.calcLines(tailOrigin, end),
+		})
+		p.dropComments(end)
 
 	case *ast.FuncDecl:
 		if x.Doc != nil {
 			origin = x.Doc.Pos()
 		}
 		p.parseComments(origin)
+		end := x.End()
 		p.regions = append(p.regions, &Region{
+			f:      p.f,
 			Origin: int(origin),
 			Ref:    &DeclRef{Decl: x, name: x.Name.Name},
+			Lines:  p.calcLines(origin, end),
 		})
-		p.dropComments(x.End())
+		p.dropComments(end)
 
 	case *ast.BadDecl:
 		p.parseComments(origin)
+		end := x.End()
 		p.regions = append(p.regions, &Region{
+			f:      p.f,
 			Origin: int(origin),
 			Ref:    &DeclRef{Decl: x},
+			Lines:  p.calcLines(origin, end),
 		})
-		p.dropComments(x.End())
+		p.dropComments(end)
 
 	default:
 		panic(fmt.Sprintf("invalid decl %q", x))
@@ -135,11 +189,6 @@ func (p *parserFromAST) parseSpec(spec ast.Spec) {
 		}
 		p.parseComments(origin)
 
-		p.regions = append(p.regions, &Region{
-			Origin: int(origin),
-			Ref:    &SpecRef{Spec: x},
-		})
-
 		end := x.End()
 		if x.Comment != nil {
 			cend := x.Comment.End()
@@ -147,6 +196,12 @@ func (p *parserFromAST) parseSpec(spec ast.Spec) {
 				end = cend
 			}
 		}
+		p.regions = append(p.regions, &Region{
+			f:      p.f,
+			Origin: int(origin),
+			Ref:    &SpecRef{Spec: x},
+			Lines:  p.calcLines(origin, end),
+		})
 		p.dropComments(end)
 
 	case *ast.ValueSpec:
@@ -155,11 +210,6 @@ func (p *parserFromAST) parseSpec(spec ast.Spec) {
 		}
 		p.parseComments(origin)
 
-		p.regions = append(p.regions, &Region{
-			Origin: int(origin),
-			Ref:    &SpecRef{Spec: x},
-		})
-
 		end := x.End()
 		if x.Comment != nil {
 			cend := x.Comment.End()
@@ -167,6 +217,12 @@ func (p *parserFromAST) parseSpec(spec ast.Spec) {
 				end = cend
 			}
 		}
+		p.regions = append(p.regions, &Region{
+			f:      p.f,
+			Origin: int(origin),
+			Ref:    &SpecRef{Spec: x},
+			Lines:  p.calcLines(origin, end),
+		})
 		p.dropComments(end)
 
 	case *ast.TypeSpec:
@@ -175,11 +231,6 @@ func (p *parserFromAST) parseSpec(spec ast.Spec) {
 		}
 		p.parseComments(origin)
 
-		p.regions = append(p.regions, &Region{
-			Origin: int(origin),
-			Ref:    &SpecRef{Spec: x, name: x.Name.Name},
-		})
-
 		end := x.End()
 		if x.Comment != nil {
 			cend := x.Comment.End()
@@ -187,6 +238,12 @@ func (p *parserFromAST) parseSpec(spec ast.Spec) {
 				end = cend
 			}
 		}
+		p.regions = append(p.regions, &Region{
+			f:      p.f,
+			Origin: int(origin),
+			Ref:    &SpecRef{Spec: x, name: x.Name.Name},
+			Lines:  p.calcLines(origin, end),
+		})
 		p.dropComments(end)
 
 	default:
@@ -196,6 +253,6 @@ func (p *parserFromAST) parseSpec(spec ast.Spec) {
 
 func dumpRegions(regions []*Region) {
 	for i, r := range regions {
-		fmt.Println(i, r, r.Origin)
+		fmt.Println(i, r, "origin", r.Origin, "lines", r.Lines)
 	}
 }
