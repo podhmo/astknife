@@ -27,10 +27,11 @@ type Ref interface {
 
 // Region :
 type Region struct {
-	f      *ast.File
-	Ref    Ref
-	Origin int
-	Lines  []int
+	f        *ast.File
+	Ref      Ref
+	Origin   int
+	Lines    []int
+	Comments []*ast.CommentGroup
 }
 
 func (r *Region) String() string {
@@ -39,7 +40,6 @@ func (r *Region) String() string {
 
 // CommentRef :
 type CommentRef struct {
-	Comments []*ast.CommentGroup
 }
 
 // Name :
