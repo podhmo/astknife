@@ -1,6 +1,7 @@
 package patchwork5
 
 import (
+	"fmt"
 	"go/parser"
 	"go/token"
 	"testing"
@@ -139,6 +140,7 @@ import (
 		t.Run(c.msg, func(t *testing.T) {
 			fset := token.NewFileSet()
 			f, err := parser.ParseFile(fset, "", c.source, parser.ParseComments)
+			fmt.Println(c.source)
 
 			require.NoError(t, err)
 			file := parseASTFile(fset, f)
@@ -146,6 +148,7 @@ import (
 			for i := range file.Regions {
 				shapes[i] = file.Regions[i].Ref.String()
 			}
+			dumpRegions(file.Regions)
 			assert.Exactly(t, c.expectedShapes, shapes)
 		})
 	}
